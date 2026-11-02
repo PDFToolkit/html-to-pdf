@@ -32,18 +32,18 @@ use PDF\Syntax\Object\NumericType;
 /** Constant operator work per side, independent of border length or dash count. */
 final readonly class BorderPainter
 {
-    /** Conservative viewer work estimate; clipping does not guarantee cheap dash processing. */
+    /** Estimate actual emitted dash segments, cumulatively checked by Renderer. */
     public function patternWork(BorderBox $box): float
     {
         $work = 0.0;
         foreach (['top', 'right', 'bottom', 'left'] as $name) {
             $side = $box->borders->{$name};
-            if ($side->color === null || $side->effectiveWidth() === 0.0 || !in_array($side->style, [BorderStyle::Dotted, BorderStyle::Dashed], true)) {
+            $segment = $this->segment($box, $name, $side);
+            if ($segment === null) {
                 continue;
             }
-            $length = $name === 'top' || $name === 'bottom' ? $box->width : $box->totalHeight;
             $period = ($side->style === BorderStyle::Dotted ? 2 : 6) * $side->effectiveWidth();
-            $work += ceil($length / $period) + 1;
+            $work += ceil($segment['length'] / $period) + 1;
         }
         return $work;
     }
@@ -75,13 +75,10 @@ final readonly class BorderPainter
             $next = ($index + 1) % 4;
             $quad = [$outer[$index], $outer[$next], $inner[$next], $inner[$index]];
             if (in_array($side->style, [BorderStyle::Dashed, BorderStyle::Dotted], true)) {
-                $line = match ($name) {
-                    'top' => [[$x, $y + $edges->top / 2], [$right, $y + $edges->top / 2]],
-                    'right' => [[$right - $edges->right / 2, $y], [$right - $edges->right / 2, $bottom]],
-                    'bottom' => [[$x, $bottom - $edges->bottom / 2], [$right, $bottom - $edges->bottom / 2]],
-                    default => [[$x + $edges->left / 2, $y], [$x + $edges->left / 2, $bottom]],
-                };
-                array_push($result, ...$this->pattern($quad, $line, $side, $pageHeight));
+                $segment = $this->segment($box, $name, $side);
+                if ($segment !== null) {
+                    array_push($result, ...$this->pattern($quad, $segment['line'], $side, $pageHeight, $segment['phase']));
+                }
             } else {
                 $bands = match ($side->style) {
                     BorderStyle::Double => [[0.0, 1 / 3, $side->color], [2 / 3, 1.0, $side->color]],
@@ -105,11 +102,43 @@ final readonly class BorderPainter
         return $result;
     }
 
+    /**
+     * Clip work along the path before asking a PDF viewer to dash it. Round dots
+     * whose centres lie just outside a slice must still contribute their caps.
+     *
+     * @return array{line:array{array{float,float},array{float,float}},length:float,phase:float}|null
+     */
+    private function segment(BorderBox $box, string $name, BorderSide $side): ?array
+    {
+        $width = $side->effectiveWidth();
+        if ($box->height === 0.0 || $side->color === null || $width === 0.0 || !in_array($side->style, [BorderStyle::Dotted, BorderStyle::Dashed], true)) {
+            return null;
+        }
+        $top = $box->y - $box->offset;
+        if ($name === 'top' || $name === 'bottom') {
+            if (($name === 'top' && $box->offset >= $width)
+                || ($name === 'bottom' && $box->offset + $box->height <= $box->totalHeight - $width)) {
+                return null;
+            }
+            $y = $name === 'top' ? $top + $width / 2 : $top + $box->totalHeight - $width / 2;
+            return ['line' => [[$box->x, $y], [$box->x + $box->width, $y]], 'length' => $box->width, 'phase' => 0.0];
+        }
+        $radius = $side->style === BorderStyle::Dotted ? $width / 2 : 0.0;
+        $start = max(0.0, $box->offset - $radius);
+        $end = min($box->totalHeight, $box->offset + $box->height + $radius);
+        if ($start >= $end) {
+            return null;
+        }
+        $x = $name === 'left' ? $box->x + $width / 2 : $box->x + $box->width - $width / 2;
+        $period = ($side->style === BorderStyle::Dotted ? 2 : 6) * $width;
+        return ['line' => [[$x, $top + $start], [$x, $top + $end]], 'length' => $end - $start, 'phase' => fmod($start, $period)];
+    }
+
     /** @param list<array{float,float}> $quad
      * @param list<array{float,float}> $line
      * @return list<Operator>
      */
-    private function pattern(array $quad, array $line, BorderSide $side, float $height): array
+    private function pattern(array $quad, array $line, BorderSide $side, float $height, float $phase): array
     {
         $color = $side->color ?? throw new \LogicException('Transparent borders do not paint.');
         $dotted = $side->style === BorderStyle::Dotted;
@@ -119,7 +148,7 @@ final readonly class BorderPainter
             new SetStrokingRGBColor(new NumericType($color->red), new NumericType($color->green), new NumericType($color->blue)),
             new SetLineWidth(new NumericType($width)),
             new SetLineCapStyle($dotted ? LineCapStyle::Round : LineCapStyle::Butt),
-            new SetLineDashPattern(new LineDashPattern(new ArrayType(new NumericType($dotted ? 0 : 3 * $width), new NumericType($dotted ? 2 * $width : 3 * $width)))),
+            new SetLineDashPattern(new LineDashPattern(new ArrayType(new NumericType($dotted ? 0 : 3 * $width), new NumericType($dotted ? 2 * $width : 3 * $width)), new NumericType($phase))),
             new MoveTo(new NumericType($line[0][0]), new NumericType($height - $line[0][1])),
             new LineTo(new NumericType($line[1][0]), new NumericType($height - $line[1][1])),
             new StrokePath(), new RestoreGraphicsState(),

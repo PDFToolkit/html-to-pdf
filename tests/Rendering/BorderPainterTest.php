@@ -99,7 +99,27 @@ final class BorderPainterTest extends TestCase
         $borders = Borders::uniform(new BorderSide(3, BorderStyle::Dashed));
         $operators = (string) (new ContentStreams(...(new BorderPainter())->operators(new BorderBox(10, 20, 100, 20, $borders, 30, 80), 200)));
         self::assertStringContainsString('10 160 100 20 re', $operators);
-        self::assertStringContainsString("11.5 210 m\n11.5 130 l", $operators);
+        self::assertStringContainsString("11.5 180 m\n11.5 160 l", $operators);
+        self::assertStringContainsString('[9 9] 12 d', $operators);
+        self::assertSame(2, substr_count($operators, ' d'));
+        self::assertSame(6.0, (new BorderPainter())->patternWork(new BorderBox(10, 20, 100, 20, $borders, 30, 80)));
+    }
+
+    public function testDottedSlicesRetainCapsWhoseCentresAreOutsideTheSlice(): void
+    {
+        $box = new BorderBox(10, 20, 100, 20, Borders::uniform(new BorderSide(3, BorderStyle::Dotted)), 30.25, 80);
+        $operators = (string) (new ContentStreams(...(new BorderPainter())->operators($box, 200)));
+        self::assertStringContainsString("11.5 181.5 m\n11.5 158.5 l", $operators);
+        self::assertStringContainsString('[0 6] 4.75 d', $operators);
+        self::assertSame(2, substr_count($operators, ' d'));
+        self::assertSame(10.0, (new BorderPainter())->patternWork($box));
+    }
+
+    public function testEmptySlicesHaveNoPatternWork(): void
+    {
+        $box = new BorderBox(10, 20, 100, 0, Borders::uniform(new BorderSide(3, BorderStyle::Dotted)), 30, 80);
+        self::assertSame(0.0, (new BorderPainter())->patternWork($box));
+        self::assertSame([], (new BorderPainter())->operators($box, 200));
     }
 
     public function testInvalidSliceGeometryFailsBeforeSerialization(): void
