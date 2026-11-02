@@ -14,6 +14,8 @@ use PDF\HtmlToPdf\Font\FontFace;
 use PDF\HtmlToPdf\Font\FontSet;
 use PDF\HtmlToPdf\HtmlSource;
 use PDF\HtmlToPdf\Layout\PageSettings;
+use PDF\HtmlToPdf\Resource\ImageAsset;
+use PDF\HtmlToPdf\Resource\ResourceCatalog;
 use PDF\HtmlToPdf\Style\Edges;
 use PDF\HtmlToPdf\UnsupportedPolicy;
 use PDF\Reading\DocumentReader;
@@ -21,6 +23,11 @@ use PDF\Reading\EncodedStream;
 use PDF\Reading\FileBytes;
 use PDF\Reading\Inspection\DocumentInspector;
 use PDF\Reading\PageTreeReader;
+use PDF\Syntax\Object\ArrayType;
+use PDF\Syntax\Object\DictionaryType;
+use PDF\Syntax\Object\IntegerType;
+use PDF\Syntax\Object\NameType;
+use PDF\Syntax\Object\StringType;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -101,6 +108,98 @@ final class ConverterTest extends TestCase
         $result = (new Converter())->convert($this->source('<strong hidden>Invisible</strong><p>Visible</p>'), new ConversionOptions($this->fonts()));
         self::assertSame(1, $result->pageCount);
         self::assertSame([], $result->diagnostics);
+    }
+
+    /** @return iterable<string, array{string, int, int}> */
+    public static function blockLinkContents(): iterable
+    {
+        yield 'direct text' => ['Visit', 1, 1];
+        yield 'paragraph descendant' => ['<p>Visit</p>', 1, 1];
+        yield 'nested block and inline descendant' => ['<div><p><span>Visit</span></p></div>', 1, 1];
+        yield 'list marker and body' => ['<ol><li>Visit</li></ol>', 2, 1];
+        yield 'table caption and cell' => ['<table style="table-layout:fixed"><caption>Visit</caption><tbody><tr><td>Visit</td></tr></tbody></table>', 2, 1];
+        yield 'paragraphs across pages' => ['<p>First</p><p style="break-before:page">Second</p>', 2, 2];
+    }
+
+    #[DataProvider('blockLinkContents')]
+    public function testBlockLinksPreserveTheirUriAndStructureAcrossDescendants(string $content, int $annotationCount, int $pageCount): void
+    {
+        $uri = 'https://example.com/visit?from=pdf';
+        $result = (new Converter())->convert(
+            $this->source('<a href="' . $uri . '" style="display:block">' . $content . '</a><p>Outside</p>'),
+            new ConversionOptions($this->fonts()),
+        );
+        self::assertSame([], $result->diagnostics);
+        self::assertSame($pageCount, $result->pageCount);
+        $read = (new DocumentReader())->read(new FileBytes($result->pdf));
+        $inspection = (new DocumentInspector())->inspect($read)->jsonSerialize();
+        self::assertSame([], $inspection['diagnostics']);
+        self::assertFalse($inspection['truncated']);
+        $links = array_values(array_filter($inspection['nodes'], static fn(array $node): bool => $node['role'] !== null && ($node['role']->jsonSerialize()['preview'] ?? null) === '/Link'));
+        self::assertCount(1, $links);
+        $objects = array_values(array_filter($inspection['nodes'], static fn(array $node): bool => $node['kind'] === 'objr'));
+        self::assertCount($annotationCount, $objects);
+        foreach ($objects as $object) {
+            self::assertSame($links[0]['id'], $object['parentId']);
+        }
+        $pages = (new PageTreeReader($read))->read();
+        $count = 0;
+        for ($index = 0; $index < $pageCount; ++$index) {
+            $annotations = $read->resolve($pages->page($index)->dictionary->get('Annots'));
+            self::assertInstanceOf(ArrayType::class, $annotations);
+            foreach ($annotations as $reference) {
+                $annotation = $read->resolve($reference);
+                self::assertInstanceOf(DictionaryType::class, $annotation);
+                self::assertEquals(new NameType('Link'), $annotation->get('Subtype'));
+                self::assertInstanceOf(IntegerType::class, $annotation->get('StructParent'));
+                $action = $read->resolve($annotation->get('A'));
+                self::assertInstanceOf(DictionaryType::class, $action);
+                self::assertEquals(new NameType('URI'), $action->get('S'));
+                $target = $action->get('URI');
+                self::assertInstanceOf(StringType::class, $target);
+                self::assertSame($uri, $target->value);
+                ++$count;
+            }
+        }
+        // The following paragraph must not inherit the preceding block's link.
+        self::assertSame($annotationCount, $count);
+    }
+
+    public function testUnsafeBlockLinkTargetIsRejectedInStrictMode(): void
+    {
+        $this->expectException(UnsupportedFeature::class);
+        (new Converter())->convert($this->source('<a href="javascript:alert(1)" style="display:block"><p>Visit</p></a>'), new ConversionOptions($this->fonts()));
+    }
+
+    public function testUnsafeBlockLinkTargetIsRemovedWithADiagnosticInReportMode(): void
+    {
+        $result = (new Converter())->convert(
+            $this->source('<a href="javascript:alert(1)" style="display:block"><p>Visit</p></a>'),
+            new ConversionOptions($this->fonts(), unsupported: UnsupportedPolicy::Report),
+        );
+        self::assertSame(['html.link-target'], array_column($result->diagnostics, 'code'));
+        $read = (new DocumentReader())->read(new FileBytes($result->pdf));
+        $page = (new PageTreeReader($read))->read()->page(0);
+        $annotations = $read->resolve($page->dictionary->get('Annots'));
+        self::assertInstanceOf(ArrayType::class, $annotations);
+        self::assertCount(0, $annotations);
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function linkedImageDisplays(): iterable
+    {
+        yield 'inline image' => ['inline'];
+        yield 'block image' => ['block'];
+    }
+
+    #[DataProvider('linkedImageDisplays')]
+    public function testImagesInsideBlockLinksRemainExplicitlyUnsupported(string $display): void
+    {
+        $image = new ImageAsset(file_get_contents(__DIR__ . '/Fixtures/images/rgba.png'));
+        $options = new ConversionOptions($this->fonts(), resources: new ResourceCatalog(images: ['image' => $image]));
+        $this->expectException(UnsupportedFeature::class);
+        $this->expectExceptionMessage('Linked images');
+        (new Converter())->convert($this->source('<a href="https://example.com" style="display:block"><img src="image" alt="Image" style="display:' . $display . '"></a>'), $options);
     }
 
     public function testUnsupportedStyleIsRejectedByDefault(): void

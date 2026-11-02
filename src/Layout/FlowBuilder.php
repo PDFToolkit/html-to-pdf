@@ -35,11 +35,15 @@ final class FlowBuilder
     /**
      * @return list<FlowItem>
      */
-    public function build(Node $node, float $x, float $available, string $parent, bool $root = false, ?string $marker = null): array
+    public function build(Node $node, float $x, float $available, string $parent, bool $root = false, ?string $marker = null, ?string $uri = null): array
     {
         $s = $node->style;
         if ($s->display === 'none') {
             return [];
+        }
+        $uri = $node->tag === 'a' ? $node->attribute('href') : $uri;
+        if ($node->tag === 'img' && $uri !== null) {
+            throw new UnsupportedFeature('Linked images are not supported by the initial annotation profile.');
         }
         $semantic = $root || ($node->tag === 'img' && $node->attribute('alt') === '') ? $parent : $this->semantics->forNode($node, $parent);
         $label = null;
@@ -59,14 +63,14 @@ final class FlowBuilder
         $innerX = $outerX + $s->borderWidth + $s->padding->left;
         $markerWidth = $marker === null ? 0.0 : max(18.0, $this->inline->face($s)->measure($marker . ' ', $s->fontSize));
         if ($node->tag === 'table') {
-            $flow = $this->table($node, $innerX, $width, $semantic);
+            $flow = $this->table($node, $innerX, $width, $semantic, $uri);
         } elseif ($node->tag === 'hr') {
             $height = $s->height?->resolve($this->options->page->contentHeight()) ?? max(1.0, $s->borderWidth);
             $flow = [new FlowItem($height, [new Rectangle($innerX, 0, $width, $height, $s->color)])];
         } elseif ($node->tag === 'img') {
             $flow = [new FlowItem($blockImage->imageHeight, [new Image($innerX, 0, $blockImage->imageWidth, $blockImage->imageHeight, $blockImage->image, $blockImage->semanticId)])];
         } else {
-            $flow = $this->children($node, $innerX + $markerWidth, $width - $markerWidth, $semantic);
+            $flow = $this->children($node, $innerX + $markerWidth, $width - $markerWidth, $semantic, $uri);
         }
         if ($marker !== null && $label !== null) {
             if ($flow === []) {
@@ -89,7 +93,7 @@ final class FlowBuilder
                     break;
                 }
             }
-            array_unshift($first->commands, new Text($font, $marker, $s->fontSize, $innerX, $baseline, $s->color, $label));
+            array_unshift($first->commands, new Text($font, $marker, $s->fontSize, $innerX, $baseline, $s->color, $label, $uri));
         }
         $flow = $this->margins->collapse($flow);
         $topMargin = new FlowItem($s->margin->top);
@@ -172,7 +176,7 @@ final class FlowBuilder
     /**
      * @return list<FlowItem>
      */
-    private function children(Node $node, float $x, float $width, string $semantic): array
+    private function children(Node $node, float $x, float $width, string $semantic, ?string $uri): array
     {
         if ($width <= 0) {
             throw new UnsupportedFeature('List indentation leaves no available width.');
@@ -188,7 +192,7 @@ final class FlowBuilder
                 $inlineNodes[] = $child;
                 continue;
             }
-            $inlineFlow = $this->flush($inlineNodes, $x, $width, $node->style, $semantic);
+            $inlineFlow = $this->flush($inlineNodes, $x, $width, $node->style, $semantic, $uri);
             array_push($flow, ...$inlineFlow);
             $inlineNodes = [];
             $marker = null;
@@ -205,24 +209,24 @@ final class FlowBuilder
                 };
                 ++$listIndex;
             }
-            $childFlow = $this->build($child, $x, $width, $semantic, marker: $marker);
+            $childFlow = $this->build($child, $x, $width, $semantic, marker: $marker, uri: $uri);
             array_push($flow, ...$childFlow);
         }
 
-        return $this->margins->collapse([...$flow, ...$this->flush($inlineNodes, $x, $width, $node->style, $semantic)]);
+        return $this->margins->collapse([...$flow, ...$this->flush($inlineNodes, $x, $width, $node->style, $semantic, $uri)]);
     }
 
     /** @param list<Node> $nodes
      * @return list<FlowItem>
      */
-    private function flush(array $nodes, float $x, float $width, ComputedStyle $style, string $semantic): array
+    private function flush(array $nodes, float $x, float $width, ComputedStyle $style, string $semantic, ?string $uri): array
     {
         if ($nodes === []) {
             return [];
         }
         $pieces = [];
         foreach ($nodes as $node) {
-            $pieces = [...$pieces, ...$this->collect($node, $semantic, $width)];
+            $pieces = [...$pieces, ...$this->collect($node, $semantic, $width, $uri)];
         }
 
         return $this->inline->format($pieces, $x, $width, $style, 'paragraph-' . ++$this->paragraph);
@@ -297,7 +301,7 @@ final class FlowBuilder
     /**
      * @return list<FlowItem>
      */
-    private function table(Node $node, float $x, float $width, string $semantic): array
+    private function table(Node $node, float $x, float $width, string $semantic, ?string $uri): array
     {
         if ($node->style->tableLayout !== 'fixed') {
             $this->diagnostics->unsupported('layout.table-auto', 'Automatic table sizing is unsupported; table-layout:fixed is required. Report policy falls back to fixed columns.', $node->id);
@@ -310,7 +314,7 @@ final class FlowBuilder
                 continue;
             }
             if ($child->tag === 'caption') {
-                $prefix = [...$prefix, ...$this->build($child, $x, $width, $semantic)];
+                $prefix = [...$prefix, ...$this->build($child, $x, $width, $semantic, uri: $uri)];
             } elseif ($child->tag === 'tr') {
                 $rows[] = $child;
             } elseif (in_array($child->tag, ['thead', 'tbody', 'tfoot'], true)) {
@@ -395,7 +399,7 @@ final class FlowBuilder
                 $border = $cell->style->borderWidth;
                 $styleValues['padding'] = new Edges($padding->top + $border, $padding->right + $border, $padding->bottom + $border, $padding->left + $border);
                 $cellCopy = new Node($cell->id, $cell->tag, $cell->attributes, $cell->children, $cell->text, new ComputedStyle(...$styleValues));
-                $cellFlow = $this->build($cellCopy, $cellX, $widths[$index], $rowSemantic);
+                $cellFlow = $this->build($cellCopy, $cellX, $widths[$index], $rowSemantic, uri: $uri);
                 foreach ($cellFlow as $item) {
                     if ($item->breakBefore || $item->breakAfter || $item->table !== null) {
                         throw new UnsupportedFeature('Page breaks and nested tables inside indivisible table rows are unsupported.');
