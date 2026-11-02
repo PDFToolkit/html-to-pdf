@@ -21,6 +21,8 @@ final class FlowItem
     public ?string $table = null;
     public bool $margin = false;
     public bool $marginBoundary = false;
+    /** Float painting does not separate adjoining in-flow margins. */
+    public bool $outOfFlow = false;
     /** Visible overflow does not increase a CSS box's normal-flow height. */
     public ?float $paintHeight = null;
 

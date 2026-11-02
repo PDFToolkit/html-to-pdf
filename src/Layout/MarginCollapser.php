@@ -7,6 +7,19 @@ namespace PDF\HtmlToPdf\Layout;
 /** Positive CSS adjoining margins form one maximum, including through empty blocks. */
 final readonly class MarginCollapser
 {
+    /** @param list<FlowItem> $items */
+    public function firstInFlow(array $items): ?FlowItem
+    {
+        foreach ($items as $item) {
+            // An ancestor's padding or border can attach in-flow height to a float slice.
+            if (!$item->outOfFlow || $item->height > 0) {
+                return $item;
+            }
+        }
+
+        return null;
+    }
+
     /**
      * @param list<FlowItem> $items
      * @return list<FlowItem>

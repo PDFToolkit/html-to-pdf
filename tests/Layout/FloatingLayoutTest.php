@@ -87,6 +87,36 @@ final class FloatingLayoutTest extends TestCase
         self::assertSame([10.0, 60.0, 380.0, 16.0], $this->rectangle($result, 'red'));
     }
 
+    public function testLeadingFloatDoesNotHideUnsupportedParentChildMarginCollapse(): void
+    {
+        $float = $this->box($this->style(float: 'left', width: new Length(80), height: new Length(50), background: new Color(1, 0, 0)));
+        $paragraph = $this->box($this->style(margin: new Edges(top: 20)), text: 'content', tag: 'p');
+        $wrapper = $this->box($this->style(), [$float, $paragraph]);
+        $this->expectException(UnsupportedFeature::class);
+        $this->expectExceptionMessage('Parent-child margin collapse');
+        $this->layout([$wrapper]);
+    }
+
+    public function testFloatInsideAnEmptyWrapperDoesNotHideAdjoiningChildMargin(): void
+    {
+        $float = $this->box($this->style(float: 'right', width: new Length(80), height: new Length(50), background: new Color(1, 0, 0)));
+        $emptyWrapper = $this->box($this->style(), [$float]);
+        $paragraph = $this->box($this->style(margin: new Edges(top: 20)), text: 'content', tag: 'p');
+        $this->expectException(UnsupportedFeature::class);
+        $this->expectExceptionMessage('Parent-child margin collapse');
+        $this->layout([$this->box($this->style(), [$emptyWrapper, $paragraph])]);
+    }
+
+    public function testParentPaddingSeparatesChildMarginAfterALeadingFloat(): void
+    {
+        $float = $this->box($this->style(float: 'left', width: new Length(80), height: new Length(50), background: new Color(1, 0, 0)));
+        $paragraph = $this->box($this->style(margin: new Edges(top: 20)), text: 'content', tag: 'p');
+        $result = $this->layout([$this->box($this->style(padding: new Edges(top: 1)), [$float, $paragraph])]);
+        self::assertSame([10.0, 11.0, 80.0, 50.0], $this->rectangle($result, 'red'));
+        self::assertSame(['content'], array_column($this->texts($result), 'text'));
+        self::assertGreaterThan(31, $this->texts($result)[0]->y);
+    }
+
     public function testAnAncestorBackgroundPaintsBeforeItsOwnDescendantFloats(): void
     {
         $float = $this->box($this->style(float: 'left', width: new Length(80), height: new Length(50), background: new Color(1, 0, 0)));

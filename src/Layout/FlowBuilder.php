@@ -115,7 +115,8 @@ final class FlowBuilder
         $bottomMargin = new FlowItem($s->margin->bottom);
         $topMargin->margin = $bottomMargin->margin = !$floating;
         $normalBlock = !$floating && in_array($s->display, ['block', 'list-item'], true) && !in_array($node->tag, ['img', 'hr'], true);
-        if ($normalBlock && $s->padding->top + $edges->top === 0.0 && $flow !== [] && $flow[0]->margin && !$flow[0]->breakBefore) {
+        $firstInFlow = $this->margins->firstInFlow($flow);
+        if ($normalBlock && $s->padding->top + $edges->top === 0.0 && $firstInFlow?->margin && !$firstInFlow->breakBefore) {
             if ($floats !== null) {
                 throw new UnsupportedFeature('Parent-child margin collapse inside float contexts is outside this layout profile. Add explicit padding or border to separate the margins.');
             }
@@ -313,6 +314,7 @@ final class FlowBuilder
             $commands[] = $this->translation->move($command, $placement->x, $placement->top - $top);
         }
         $item = new FlowItem(0, $commands);
+        $item->outOfFlow = true;
         $item->paintHeight = $placement->top - $top + $box->extent();
         $item->breakBefore = $box->breakBefore;
         $item->breakAfter = $box->breakAfter;
