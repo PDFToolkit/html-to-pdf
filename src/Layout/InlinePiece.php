@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PDF\HtmlToPdf\Layout;
 
 use PDF\HtmlToPdf\Resource\ImageAsset;
+use PDF\HtmlToPdf\Drawing\RadioButton;
 use PDF\HtmlToPdf\Style\ComputedStyle;
 
 final readonly class InlinePiece
@@ -18,5 +19,6 @@ final readonly class InlinePiece
         public ?ImageAsset $image = null,
         public float $imageWidth = 0,
         public float $imageHeight = 0,
+        public ?RadioButton $radio = null,
     ) {}
 }
