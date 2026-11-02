@@ -26,6 +26,11 @@ et 17 absentes ; **CSS1 complet reste non qualifié**.
 composer require pdftoolkit/html-to-pdf:^0.2
 ```
 
+Le core est installé sous son nom Composer canonique `pdftoolkit/pdf:^0.12.2`.
+Si votre application exige directement `roukmoute/pdf`, remplacez cette exigence
+par `pdftoolkit/pdf:^0.12.2` et actualisez le verrou avec Composer.
+Les namespaces PHP et les API restent inchangés.
+
 PHP 8.3+ sur une architecture 64 bits, DOM et mbstring sont nécessaires.
 `php-64bit` est une vérification de plateforme Composer, pas une extension à
 installer séparément. Les dépendances de production sont des versions stables ;

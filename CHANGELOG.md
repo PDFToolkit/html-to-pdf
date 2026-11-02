@@ -2,6 +2,13 @@
 
 [English](CHANGELOG.md) · [Français](CHANGELOG.fr.md)
 
+## Unreleased
+
+## 0.2.1 — 2026-11-02
+
+- Use the canonical Composer package `pdftoolkit/pdf:^0.12.2` and migrated stable dependencies. Keep existing PHP namespaces, APIs and behavior.
+- Document migration of application requirements in English and French; preserve previous releases and their evidence.
+
 ## 0.2.0 — 2026-11-02
 
 See the release assets for exact-candidate PHP, PDF and browser validation

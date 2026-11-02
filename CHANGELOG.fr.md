@@ -2,6 +2,13 @@
 
 [English](CHANGELOG.md) · [Français](CHANGELOG.fr.md)
 
+## Non publié
+
+## 0.2.1 — 2026-11-02
+
+- Utiliser le nom Composer canonique `pdftoolkit/pdf:^0.12.2` et les dépendances stables migrées. Conserver les namespaces PHP, API et comportements existants.
+- Documenter la migration des exigences applicatives en français et en anglais ; conserver les anciennes versions et leurs preuves.
+
 ## 0.2.0 — 2026-11-02
 
 Les artefacts de release conservent les reçus PHP, PDF et navigateurs du candidat
