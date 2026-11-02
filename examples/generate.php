@@ -37,7 +37,7 @@ foreach (['notebook', 'lamp', 'mug'] as $name) {
 $options = new ConversionOptions(fonts: $fonts, resources: new ResourceCatalog(images: $images));
 $converter = new Converter();
 $manifest = ['php' => PHP_VERSION, 'engine' => 'native-php', 'documents' => []];
-foreach (['invoice', 'catalogue', 'multipage'] as $name) {
+foreach (['invoice', 'catalogue', 'multipage', 'css1'] as $name) {
     $started = hrtime(true);
     $html = $read(__DIR__ . '/sources/' . $name . '.html');
     $result = $converter->convert(new HtmlSource($html), $options);

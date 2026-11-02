@@ -6,6 +6,8 @@
 - [Catalogue](../docs/fr/catalogue.md) : trois images originales, retours et alternatives.
 - [Plusieurs pages](../docs/fr/multipage.md) : trente lignes, en-têtes répétés comme artefacts et saut forcé.
 
+- [Bordures CSS1](../docs/fr/css1.md) : huit styles, quatre côtés indépendants et couleurs RGB.
+
 ```sh
 php -d memory_limit=512M examples/generate.php _build/examples
 python tools/validate_pdf.py --directory _build/examples

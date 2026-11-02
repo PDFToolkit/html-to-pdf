@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <title>CSS1 : bordures et cascade</title>
+  <style>
+    body { margin: 0; color: #173c4b; font-size: 11pt; line-height: 1.4; }
+    h1 { margin: 0 0 8pt; font-size: 26pt; line-height: 1.1; }
+    p { margin: 0 0 12pt; }
+    .eyebrow { font-size: 9pt; color: #176a80; margin-bottom: 6pt; }
+    .intro { color: #465863; }
+    table { width: 100%; table-layout: fixed; margin: 0 0 14pt; }
+    td { width: 50%; padding: 0 10pt 10pt 0; vertical-align: top; }
+    .card { height: 39pt; padding: 9pt; border: 5pt solid #26788b; background: #edf4f5; }
+    .label { font-weight: bold; font-size: 12pt; }
+    .hint { font-size: 9pt; line-height: 13pt; color: #465863; }
+    .dotted { border-style: dotted; }
+    .dashed { border-style: dashed; }
+    .double { border-style: double; }
+    .groove { border-style: groove; }
+    .ridge { border-style: ridge; }
+    .inset { border-style: inset; }
+    .outset { border-style: outset; }
+    .sides { padding: 12pt; margin-bottom: 14pt; background: #f4f7f8;
+      border-top: 4pt solid #26788b; border-right: 8pt dashed #3b7557;
+      border-bottom: 6pt double #ba5e24; border-left: 12pt dotted #78508e; }
+    .rgb { padding: 10pt; border: medium solid; color: rgb(-20,128,260); }
+    .footnote { font-size: 9pt; line-height: 13pt; margin-top: 14pt; color: #465863; }
+  </style>
+</head>
+<body>
+  <div class="eyebrow">PDFTOOLKIT · MOTEUR PHP AUTONOME</div>
+  <h1>CSS1, côté par côté</h1>
+  <p class="intro">Huit styles de bordure, quatre côtés indépendants et des couleurs calculées avant le rendu. Le texte reste sélectionnable dans le PDF.</p>
+  <table>
+    <tbody>
+      <tr>
+        <td><div class="card"><div class="label">Solid</div><div class="hint">Une bande continue.</div></div></td>
+        <td><div class="card dotted"><div class="label">Dotted</div><div class="hint">Une suite de points.</div></div></td>
+      </tr>
+      <tr>
+        <td><div class="card dashed"><div class="label">Dashed</div><div class="hint">Des tirets réguliers.</div></div></td>
+        <td><div class="card double"><div class="label">Double</div><div class="hint">Deux traits séparés.</div></div></td>
+      </tr>
+      <tr>
+        <td><div class="card groove"><div class="label">Groove</div><div class="hint">Un sillon en relief.</div></div></td>
+        <td><div class="card ridge"><div class="label">Ridge</div><div class="hint">Une arête en relief.</div></div></td>
+      </tr>
+      <tr>
+        <td><div class="card inset"><div class="label">Inset</div><div class="hint">Une surface en retrait.</div></div></td>
+        <td><div class="card outset"><div class="label">Outset</div><div class="hint">Une surface en saillie.</div></div></td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="sides"><strong>Chaque côté conserve sa géométrie.</strong><br>En haut : solid. À droite : dashed. En bas : double. À gauche : dotted.</div>
+  <div class="rgb"><strong>RGB borné et currentColor</strong><br>La couleur rgb(-20,128,260) devient rgb(0,128,255). La bordure reprend cette couleur avec sa largeur medium.</div>
+  <p class="footnote">Exemple original de la version 0.2.0. Ces fonctions ne constituent pas une qualification complète de CSS1, de PDF/A ou de PDF/UA.</p>
+</body>
+</html>
