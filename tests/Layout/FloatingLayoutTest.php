@@ -87,6 +87,49 @@ final class FloatingLayoutTest extends TestCase
         self::assertSame([10.0, 60.0, 380.0, 16.0], $this->rectangle($result, 'red'));
     }
 
+    public function testAnAncestorBackgroundPaintsBeforeItsOwnDescendantFloats(): void
+    {
+        $float = $this->box($this->style(float: 'left', width: new Length(80), height: new Length(50), background: new Color(1, 0, 0)));
+        $parent = $this->box($this->style(background: new Color(0, 0, 1)), [$float, $this->box($this->style(clear: 'both'), text: 'after')]);
+        $result = $this->layout([$parent]);
+        $rectangles = array_values(array_filter($result->pages[0]->commands, static fn($command): bool => $command instanceof Rectangle));
+        self::assertSame(1.0, $rectangles[0]->color->blue);
+        self::assertSame(1.0, $rectangles[1]->color->red);
+    }
+
+    public function testANormalBackgroundCannotSilentlyCoverAnEarlierFloat(): void
+    {
+        $float = $this->box($this->style(float: 'left', width: new Length(80), height: new Length(50), background: new Color(1, 0, 0)));
+        $paragraph = $this->box($this->style(background: new Color(0, 0, 1)), text: 'alongside');
+        $this->expectException(UnsupportedFeature::class);
+        $this->expectExceptionMessage('background or border beneath earlier floats');
+        $this->layout([$float, $paragraph]);
+    }
+
+    public function testANormalBorderCannotSilentlyPaintOverAnEarlierFloat(): void
+    {
+        $float = $this->box($this->style(float: 'right', width: new Length(80), height: new Length(50)));
+        $paragraph = $this->box($this->style(borderWidth: 2), text: 'alongside');
+        $this->expectException(UnsupportedFeature::class);
+        $this->expectExceptionMessage('background or border beneath earlier floats');
+        $this->layout([$float, $paragraph]);
+    }
+
+    public function testInlineContentBeforeAFloatIsRejectedRatherThanMovingTheFloatDown(): void
+    {
+        $float = $this->box($this->style(float: 'left', width: new Length(80), height: new Length(50)));
+        $this->expectException(UnsupportedFeature::class);
+        $this->expectExceptionMessage('after inline content');
+        $this->layout([new Node('leading-text', '#text', text: 'before', style: $this->style(display: 'inline')), $float]);
+    }
+
+    public function testCollapsedWhitespaceBeforeFloatsDoesNotCreateAnInlineRun(): void
+    {
+        $float = $this->box($this->style(float: 'left', width: new Length(80), height: new Length(50), background: new Color(1, 0, 0)));
+        $result = $this->layout([new Node('leading-whitespace', '#text', text: " \n\t ", style: $this->style(display: 'inline')), $float]);
+        self::assertSame([10.0, 10.0, 80.0, 50.0], $this->rectangle($result, 'red'));
+    }
+
     public function testExplicitHeightKeepsItsBackgroundAndAllowsVisibleTextOverflow(): void
     {
         $float = $this->box($this->style(float: 'left', width: new Length(120), height: new Length(20), whiteSpace: 'pre', background: new Color(1, 0, 0)), text: "one\ntwo\nthree");

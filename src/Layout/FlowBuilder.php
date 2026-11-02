@@ -50,6 +50,7 @@ final class FlowBuilder
             $this->validateRadio($node);
             throw new UnsupportedFeature('Radio snapshots require an inline formatting context.');
         }
+        $floatCheckpoint = $floats?->checkpoint() ?? 0;
         $uri = $node->tag === 'a' ? $node->attribute('href') : $uri;
         if ($node->tag === 'img' && $uri !== null) {
             throw new UnsupportedFeature('Linked images are not supported by the initial annotation profile.');
@@ -187,6 +188,10 @@ final class FlowBuilder
         }
         $boxWidth = $width + $extras;
         $boxHeight = array_sum(array_map(static fn(FlowItem $item): float => $item->height, $flow));
+        if (!$floating && $floats !== null && ($s->background !== null || $borders->hasWidth())
+            && $floats->overlapsBefore($floatCheckpoint, $outerX, $top + $s->margin->top, $boxWidth, $boxHeight)) {
+            throw new UnsupportedFeature('Painting a normal block background or border beneath earlier floats is outside this layout profile.');
+        }
         $offset = 0.0;
         foreach ($flow as $index => $item) {
             $decorations = [];
@@ -245,6 +250,9 @@ final class FlowBuilder
                 continue;
             }
             $inlineFlow = $this->flush($inlineNodes, $x, $width, $node->style, $semantic, $uri, $floats, $top + $this->height($flow));
+            if ($child->style->float !== 'none' && $inlineFlow !== []) {
+                throw new UnsupportedFeature('Inserting a float after inline content in the same formatting context is outside this layout profile.');
+            }
             array_push($flow, ...$inlineFlow);
             $inlineNodes = [];
             $marker = null;

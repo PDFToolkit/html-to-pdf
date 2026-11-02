@@ -65,4 +65,16 @@ final class FloatContextTest extends TestCase
         $this->expectException(LimitExceeded::class);
         $nested->space(0, 200, 0, 10);
     }
+
+    public function testOverlapQueriesDistinguishEarlierFloatsFromDescendantFloats(): void
+    {
+        $context = new FloatContext(100);
+        $context->place('left', 60, 40, 0, 0, 200);
+        $beforeDescendants = $context->checkpoint();
+        $context->place('right', 60, 40, 0, 0, 200);
+        self::assertTrue($context->overlapsBefore($beforeDescendants, 0, 0, 200, 16));
+        self::assertFalse($context->overlapsBefore($beforeDescendants, 140, 0, 60, 16));
+        self::assertTrue($context->overlapsBefore($context->checkpoint(), 140, 0, 60, 16));
+        self::assertFalse($context->overlapsBefore($context->checkpoint(), 0, 40, 200, 16));
+    }
 }

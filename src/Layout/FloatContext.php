@@ -24,6 +24,33 @@ final class FloatContext
         return new self($this->budget);
     }
 
+    public function checkpoint(): int
+    {
+        return count($this->placements);
+    }
+
+    /** Test only floats that existed before a normal block began its layout. */
+    public function overlapsBefore(int $checkpoint, float $x, float $top, float $width, float $height): bool
+    {
+        if ($checkpoint < 0 || $checkpoint > count($this->placements) || !is_finite($x) || !is_finite($top)
+            || !is_finite($width) || !is_finite($height) || $width < 0 || $height < 0) {
+            throw new \InvalidArgumentException('A float overlap query requires valid bounds and a context checkpoint.');
+        }
+        if ($width === 0.0 || $height === 0.0) {
+            return false;
+        }
+        for ($index = 0; $index < $checkpoint; ++$index) {
+            $this->account();
+            $placement = $this->placements[$index];
+            if ($placement->x < $x + $width && $placement->x + $placement->width > $x
+                && $placement->top < $top + $height && $placement->bottom() > $top) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function place(string $side, float $width, float $height, float $top, float $left, float $available): FloatPlacement
     {
         if (!in_array($side, ['left', 'right'], true) || !is_finite($width) || !is_finite($height) || $width <= 0 || $height < 0) {
