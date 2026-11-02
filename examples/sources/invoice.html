@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Facture — Atelier des objets</title>
+<style>
+body { font-size: 11pt; line-height: 1.4; color: #243746; }
+h1 { color: #176a80; font-size: 30pt; margin: 0 0 8pt; }
+h2 { font-size: 15pt; margin: 20pt 0 8pt; }
+p { margin: 0 0 9pt; }
+.eyebrow { color: #176a80; font-size: 9pt; margin-bottom: 12pt; }
+.address { background-color: #e7eff4; padding: 14pt; margin: 18pt 0; }
+table { table-layout: fixed; width: 100%; margin: 12pt 0; }
+th { background-color: #176a80; color: #ffffff; text-align: left; padding: 9pt; }
+td { padding: 9pt; border: 0.5pt solid #c7d6df; }
+.amount { text-align: right; }
+.total { font-size: 18pt; font-weight: bold; color: #176a80; text-align: right; margin-top: 18pt; }
+.note { font-size: 9pt; color: #526674; margin-top: 22pt; }
+a { color: #176a80; }
+</style>
+</head>
+<body>
+<p class="eyebrow">ATELIER DES OBJETS · DOCUMENT DE DÉMONSTRATION</p>
+<h1>Facture</h1>
+<p><strong>N° F-2026-042</strong> · Émise le 2 novembre 2026</p>
+<div class="address"><p><strong>Client : Maison du papier</strong></p><p>24, rue des Ateliers<br>75011 Paris · France</p></div>
+<h2>Votre commande</h2>
+<table>
+<thead><tr><th scope="col">Article</th><th scope="col">Quantité</th><th scope="col">Montant HT</th></tr></thead>
+<tbody>
+<tr><td>Carnet relié — papier ivoire</td><td>12</td><td class="amount">180,00 €</td></tr>
+<tr><td>Lampe de bureau en métal</td><td>2</td><td class="amount">148,00 €</td></tr>
+<tr><td>Tasse en céramique émaillée</td><td>6</td><td class="amount">72,00 €</td></tr>
+</tbody></table>
+<p class="amount">Sous-total HT : 400,00 €</p>
+<p class="amount">TVA 20 % : 80,00 €</p>
+<p class="total">Total TTC : 480,00 €</p>
+<h2>Merci pour votre confiance</h2>
+<p>Le texte reste sélectionnable, les accents sont conservés et les colonnes
+du tableau s’alignent sur une grille commune.</p>
+<p class="note">Exemple fictif, sans valeur commerciale.<br>
+Moteur PHP natif : <a href="https://github.com/PDFToolkit/html-to-pdf">PDFToolkit HTML to PDF</a>.</p>
+</body>
+</html>
