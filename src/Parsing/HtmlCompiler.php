@@ -13,10 +13,13 @@ use PDF\HtmlToPdf\Css\StyleState;
 use PDF\HtmlToPdf\Diagnostics;
 use PDF\HtmlToPdf\Exception\ConversionException;
 use PDF\HtmlToPdf\Exception\LimitExceeded;
+use PDF\HtmlToPdf\Exception\UnsupportedFeature;
 use PDF\HtmlToPdf\HtmlSource;
+use PDF\HtmlToPdf\FormControls;
 use PDF\HtmlToPdf\Model\HtmlDocument;
 use PDF\HtmlToPdf\Model\Node;
 use PDF\HtmlToPdf\Style\ComputedStyle;
+use PDF\HtmlToPdf\Style\RadioSnapshotStyle;
 
 /** Stateless facade: each invocation owns its DOM, cascade, budgets and node identities. */
 final class HtmlCompiler
@@ -29,7 +32,7 @@ final class HtmlCompiler
             throw new LimitExceeded('Explicit resource byte budget exhausted.');
         }
         $builder = new BoundedTreeBuilder($budget, $diagnostics);
-        (new Tokenizer(new Scanner($source->html, 'UTF-8'), $builder))->parse();
+        (new Tokenizer(new Scanner((new HtmlDoctypeProjection())->project($source->html), 'UTF-8'), $builder))->parse();
         $document = $builder->document();
         if (!$document instanceof \DOMDocument) {
             throw new ConversionException('HTML parser did not produce a document.');
@@ -53,7 +56,7 @@ final class HtmlCompiler
                     $cascade->linkedStylesheet($element->getAttribute('href'), $source->baseUri);
                 }
             }
-            $this->checkElement($element, $diagnostics);
+            $this->checkElement($element, $diagnostics, $options);
         }
         $cascade->stylesheet($source->stylesheet, $source->baseUri);
         foreach ($elements as $element) {
@@ -64,17 +67,22 @@ final class HtmlCompiler
         $computer = new StyleComputer($diagnostics);
         $htmlStyle = $computer->compute('html', $this->rules($html, $cascade), new StyleState());
         $sequence = 0;
-        $root = $this->node($body, $htmlStyle, $htmlStyle->style->fontSize, $cascade, $computer, $diagnostics, $options, $sequence, $htmlStyle->style->display === 'none');
+        $root = $this->node($body, $htmlStyle, $htmlStyle->style->fontSize, $cascade, $computer, $diagnostics, $options, $sequence, $htmlStyle->style->display === 'none', $source->baseUri);
         if ($root === null) {
             throw new ConversionException('HTML has no body.');
         }
         if ($htmlStyle->style->display === 'none') {
             $root = new Node($root->id, $root->tag, $root->attributes, $root->children, style: new ComputedStyle(...array_replace(get_object_vars($root->style), ['display' => 'none'])));
         }
+        $canvas = $htmlStyle->style->display === 'none' ? null : $htmlStyle->style->background;
+        if ($htmlStyle->style->display !== 'none' && $canvas === null && $root->style->background !== null) {
+            $canvas = $root->style->background;
+            $root = new Node($root->id, $root->tag, $root->attributes, $root->children, style: new ComputedStyle(...array_replace(get_object_vars($root->style), ['background' => null])));
+        }
         $titleElement = $document->getElementsByTagName('title')->item(0);
         $title = $titleElement === null ? '' : trim($titleElement->textContent);
         $language = trim($body->getAttribute('lang')) ?: trim($html->getAttribute('lang')) ?: 'en';
-        return new HtmlDocument($root, $title, $language);
+        return new HtmlDocument($root, $title, $language, $canvas);
     }
 
     /** @return array{\DOMElement,\DOMElement} */
@@ -102,11 +110,16 @@ final class HtmlCompiler
         return [$html, $body];
     }
 
-    private function checkElement(\DOMElement $element, Diagnostics $diagnostics): void
+    private function checkElement(\DOMElement $element, Diagnostics $diagnostics, ConversionOptions $options): void
     {
         $tag = strtolower($element->tagName);
         if (!$this->supportedTag($tag) || ($element->namespaceURI !== null && $element->namespaceURI !== '' && $element->namespaceURI !== 'http://www.w3.org/1999/xhtml')) {
             $diagnostics->unsupported('html.tag', 'Unsupported HTML element: ' . $tag);
+        }
+        if (in_array($tag, ['form', 'input'], true) && $options->formControls !== FormControls::StaticSnapshot) {
+            $diagnostics->unsupported('html.form', 'Form controls require the explicit static snapshot option.');
+        } elseif ($tag === 'input' && strtolower($element->getAttribute('type')) !== 'radio') {
+            $diagnostics->unsupported('html.form-control', 'Only static radio input snapshots are supported.');
         }
         foreach ($element->attributes as $attribute) {
             $name = strtolower($attribute->name);
@@ -143,10 +156,10 @@ final class HtmlCompiler
 
     private function supportedTag(string $tag): bool
     {
-        return in_array($tag, ['html', 'head', 'body', 'title', 'meta', 'style', 'link', 'div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'address', 'p', 'span', 'strong', 'b', 'em', 'i', 'u', 'code', 'samp', 'kbd', 'pre', 'blockquote', 'br', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption', 'img', 'a'], true);
+        return in_array($tag, ['html', 'head', 'body', 'dl', 'dt', 'dd', 'form', 'input', 'title', 'meta', 'style', 'link', 'div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'address', 'p', 'span', 'strong', 'b', 'em', 'i', 'u', 'code', 'samp', 'kbd', 'pre', 'blockquote', 'br', 'hr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'caption', 'img', 'a'], true);
     }
 
-    private function node(\DOMNode $dom, StyleState $parent, float $rootSize, Cascade $cascade, StyleComputer $computer, Diagnostics $diagnostics, ConversionOptions $options, int &$sequence, bool $hidden = false): ?Node
+    private function node(\DOMNode $dom, StyleState $parent, float $rootSize, Cascade $cascade, StyleComputer $computer, Diagnostics $diagnostics, ConversionOptions $options, int &$sequence, bool $hidden = false, ?string $baseUri = null): ?Node
     {
         if ($dom instanceof \DOMText) {
             return new Node('node-' . ++$sequence, '#text', text: $dom->textContent, style: $parent->style);
@@ -155,7 +168,10 @@ final class HtmlCompiler
             return null;
         }
         $tag = strtolower($dom->tagName);
-        if (in_array($tag, ['head', 'title', 'meta', 'style', 'link', 'script', 'template', 'iframe', 'object', 'embed', 'canvas', 'svg', 'math', 'input', 'textarea', 'select', 'button', 'audio', 'video'], true)) {
+        if (in_array($tag, ['head', 'title', 'meta', 'style', 'link', 'script', 'template', 'iframe', 'object', 'embed', 'canvas', 'svg', 'math', 'textarea', 'select', 'button', 'audio', 'video'], true)) {
+            return null;
+        }
+        if ($tag === 'input' && ($options->formControls !== FormControls::StaticSnapshot || strtolower($dom->getAttribute('type')) !== 'radio')) {
             return null;
         }
         $id = 'node-' . ++$sequence;
@@ -176,15 +192,30 @@ final class HtmlCompiler
         }
         $style = $computer->compute($tag, $rules, $parent, $rootSize);
         $hidden = $hidden || $style->style->display === 'none';
+        if ($tag === 'input' && !$hidden) {
+            try {
+                (new RadioSnapshotStyle())->validate($style->style);
+            } catch (UnsupportedFeature $error) {
+                $diagnostics->unsupported('html.form-style', $error->getMessage(), $id);
+                return null;
+            }
+        }
         $attributes = [];
-        foreach (['id', 'class', 'lang', 'title', 'alt', 'href', 'src', 'width', 'height', 'start', 'value', 'scope', 'rowspan', 'colspan'] as $name) {
+        foreach (['id', 'class', 'lang', 'title', 'alt', 'href', 'src', 'width', 'height', 'start', 'value', 'scope', 'rowspan', 'colspan', 'type', 'name', 'checked', 'disabled'] as $name) {
             if ($dom->hasAttribute($name)) {
                 $attributes[$name] = $dom->getAttribute($name);
             }
         }
-        if ($tag === 'a' && isset($attributes['href']) && preg_match('~^(?:https?://|mailto:)[\x21-\x7e]+$~iD', $attributes['href']) !== 1) {
-            $diagnostics->unsupported('html.link-target', 'Only absolute ASCII HTTP, HTTPS and mailto links are supported.', $id);
-            unset($attributes['href']);
+        if ($tag === 'a' && isset($attributes['href'])) {
+            try {
+                $attributes['href'] = (new LinkTarget())->resolve($attributes['href'], $baseUri);
+            } catch (ConversionException $error) {
+                $diagnostics->unsupported('html.link-target', $error->getMessage(), $id);
+                unset($attributes['href']);
+            }
+        }
+        if ($tag === 'input') {
+            $attributes['type'] = 'radio';
         }
         if ($tag === 'img' && !$hidden) {
             $options->resources->image($attributes['src'] ?? '');
@@ -194,7 +225,7 @@ final class HtmlCompiler
         }
         $children = [];
         foreach ($dom->childNodes as $child) {
-            $node = $this->node($child, $style, $rootSize, $cascade, $computer, $diagnostics, $options, $sequence, $hidden);
+            $node = $this->node($child, $style, $rootSize, $cascade, $computer, $diagnostics, $options, $sequence, $hidden, $baseUri);
             if ($node !== null) {
                 $children[] = $node;
             }

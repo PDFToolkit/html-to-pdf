@@ -10,5 +10,5 @@ use PDF\HtmlToPdf\Resource\ResourceCatalog;
 
 final readonly class ConversionOptions
 {
-    public function __construct(public FontSet $fonts, public PageSettings $page = new PageSettings(), public ResourceCatalog $resources = new ResourceCatalog(), public ConversionLimits $limits = new ConversionLimits(), public UnsupportedPolicy $unsupported = UnsupportedPolicy::Reject) {}
+    public function __construct(public FontSet $fonts, public PageSettings $page = new PageSettings(), public ResourceCatalog $resources = new ResourceCatalog(), public ConversionLimits $limits = new ConversionLimits(), public UnsupportedPolicy $unsupported = UnsupportedPolicy::Reject, public FormControls $formControls = FormControls::Reject) {}
 }
