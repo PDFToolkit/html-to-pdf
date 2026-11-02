@@ -1,0 +1,494 @@
+<?php
+
+declare(strict_types=1);
+
+namespace PDF\HtmlToPdf\Layout;
+
+use PDF\HtmlToPdf\ConversionOptions;
+use PDF\HtmlToPdf\Diagnostics;
+use PDF\HtmlToPdf\Drawing\Image;
+use PDF\HtmlToPdf\Drawing\Rectangle;
+use PDF\HtmlToPdf\Drawing\Text;
+use PDF\HtmlToPdf\Exception\LimitExceeded;
+use PDF\HtmlToPdf\Exception\UnsupportedFeature;
+use PDF\HtmlToPdf\Model\Node;
+use PDF\HtmlToPdf\Style\ComputedStyle;
+use PDF\HtmlToPdf\Style\Edges;
+
+/** Builds bounded, page-independent flow slices. No shared caches or external resources. */
+final class FlowBuilder
+{
+    private readonly InlineFormatter $inline;
+    private readonly CommandTranslation $translation;
+    private readonly MarginCollapser $margins;
+    private int $paragraph = 0;
+    private int $items = 0;
+    private int $commands = 0;
+
+    public function __construct(private readonly ConversionOptions $options, private readonly Diagnostics $diagnostics, private readonly SemanticTree $semantics)
+    {
+        $this->inline = new InlineFormatter($options);
+        $this->translation = new CommandTranslation();
+        $this->margins = new MarginCollapser();
+    }
+
+    /**
+     * @return list<FlowItem>
+     */
+    public function build(Node $node, float $x, float $available, string $parent, bool $root = false, ?string $marker = null): array
+    {
+        $s = $node->style;
+        if ($s->display === 'none') {
+            return [];
+        }
+        $semantic = $root || ($node->tag === 'img' && $node->attribute('alt') === '') ? $parent : $this->semantics->forNode($node, $parent);
+        $label = null;
+        if ($node->tag === 'li') {
+            if ($marker !== null) {
+                $label = $this->semantics->add('Lbl', $semantic);
+            }
+            $semantic = $this->semantics->add('LBody', $semantic);
+        }
+        $outerX = $x + $s->margin->left;
+        $extras = $s->padding->horizontal() + $s->borderWidth * 2;
+        $blockImage = $node->tag === 'img' ? $this->image($node, $available, $semantic) : null;
+        $width = $blockImage->imageWidth ?? $s->width?->resolve($available) ?? ($available - $s->margin->horizontal() - $extras);
+        if ($width <= 0 || $width + $extras + $s->margin->horizontal() > $available + 0.001) {
+            throw new UnsupportedFeature('A block box exceeds its available width.');
+        }
+        $innerX = $outerX + $s->borderWidth + $s->padding->left;
+        $markerWidth = $marker === null ? 0.0 : max(18.0, $this->inline->face($s)->measure($marker . ' ', $s->fontSize));
+        if ($node->tag === 'table') {
+            $flow = $this->table($node, $innerX, $width, $semantic);
+        } elseif ($node->tag === 'hr') {
+            $height = $s->height?->resolve($this->options->page->contentHeight()) ?? max(1.0, $s->borderWidth);
+            $flow = [new FlowItem($height, [new Rectangle($innerX, 0, $width, $height, $s->color)])];
+        } elseif ($node->tag === 'img') {
+            $flow = [new FlowItem($blockImage->imageHeight, [new Image($innerX, 0, $blockImage->imageWidth, $blockImage->imageHeight, $blockImage->image, $blockImage->semanticId)])];
+        } else {
+            $flow = $this->children($node, $innerX + $markerWidth, $width - $markerWidth, $semantic);
+        }
+        if ($marker !== null && $label !== null) {
+            if ($flow === []) {
+                $flow = $this->inline->format([new InlinePiece('', $s, $label, lineBreak: true)], $innerX + $markerWidth, $width - $markerWidth, $s, 'paragraph-' . ++$this->paragraph);
+            }
+            $first = $flow[0];
+            foreach ($flow as $candidate) {
+                foreach ($candidate->commands as $command) {
+                    if ($command instanceof Text) {
+                        $first = $candidate;
+                        break 2;
+                    }
+                }
+            }
+            $font = $this->inline->face($s);
+            $baseline = $font->metrics($s->fontSize)->ascent;
+            foreach ($first->commands as $command) {
+                if ($command instanceof Text) {
+                    $baseline = $command->y;
+                    break;
+                }
+            }
+            array_unshift($first->commands, new Text($font, $marker, $s->fontSize, $innerX, $baseline, $s->color, $label));
+        }
+        $flow = $this->margins->collapse($flow);
+        $topMargin = new FlowItem($s->margin->top);
+        $bottomMargin = new FlowItem($s->margin->bottom);
+        $topMargin->margin = $bottomMargin->margin = true;
+        $normalBlock = in_array($s->display, ['block', 'list-item'], true) && !in_array($node->tag, ['img', 'hr'], true);
+        if ($normalBlock && $s->padding->top + $s->borderWidth === 0.0 && $flow !== [] && $flow[0]->margin && !$flow[0]->breakBefore) {
+            $childMargin = array_shift($flow);
+            $topMargin->height = max($topMargin->height, $childMargin->height);
+            $topMargin->avoidGroups = $childMargin->avoidGroups;
+        }
+        if ($normalBlock && $s->height === null && $s->padding->bottom + $s->borderWidth === 0.0 && $flow !== [] && $flow[array_key_last($flow)]->margin && !$flow[array_key_last($flow)]->breakAfter) {
+            $childMargin = array_pop($flow);
+            $bottomMargin->height = max($bottomMargin->height, $childMargin->height);
+            $bottomMargin->avoidGroups = $childMargin->avoidGroups;
+        }
+        // Remaining margins are internal to this box and cannot escape through an ancestor.
+        foreach ($flow as $item) {
+            $item->margin = false;
+        }
+        $height = array_sum(array_map(static fn(FlowItem $item): float => $item->height, $flow));
+        if ($s->height !== null && $node->tag !== 'img' && $node->tag !== 'hr') {
+            if ($s->height->percentage) {
+                throw new UnsupportedFeature('Percentage block heights require a definite containing height and are outside this profile.');
+            }
+            if ($height > $s->height->value + 0.001) {
+                throw new UnsupportedFeature('Content exceeds an explicit block height.');
+            }
+            $flow[] = new FlowItem($s->height->value - $height);
+        }
+        if ($s->padding->top + $s->borderWidth > 0) {
+            array_unshift($flow, new FlowItem($s->padding->top + $s->borderWidth));
+        }
+        if ($s->padding->bottom + $s->borderWidth > 0) {
+            $flow[] = new FlowItem($s->padding->bottom + $s->borderWidth);
+        }
+        if ($flow === []) {
+            $flow[] = new FlowItem(0);
+        }
+        $boxWidth = $width + $extras;
+        foreach ($flow as $index => $item) {
+            $decorations = [];
+            if ($s->background !== null && $item->height > 0) {
+                $decorations[] = new Rectangle($outerX, 0, $boxWidth, $item->height, $s->background, semanticId: $semantic);
+            }
+            if ($s->borderWidth > 0 && $item->height > 0) {
+                $decorations[] = new Rectangle($outerX, 0, $s->borderWidth, $item->height, $s->borderColor);
+                $decorations[] = new Rectangle($outerX + $boxWidth - $s->borderWidth, 0, $s->borderWidth, $item->height, $s->borderColor);
+                if ($index === 0) {
+                    $decorations[] = new Rectangle($outerX, 0, $boxWidth, $s->borderWidth, $s->borderColor);
+                }
+                if ($index === count($flow) - 1) {
+                    $decorations[] = new Rectangle($outerX, max(0, $item->height - $s->borderWidth), $boxWidth, $s->borderWidth, $s->borderColor);
+                }
+            }
+            $item->commands = [...$decorations, ...$item->commands];
+        }
+        if ($topMargin->height > 0) {
+            array_unshift($flow, $topMargin);
+        }
+        if ($bottomMargin->height > 0) {
+            $flow[] = $bottomMargin;
+        }
+        $flow = $this->margins->collapse($flow);
+        if ($flow === []) {
+            $flow[] = new FlowItem(0);
+        }
+        $flow[0]->breakBefore = $flow[0]->breakBefore || in_array($s->breakBefore, ['page', 'always'], true);
+        $flow[array_key_last($flow)]->breakAfter = $flow[array_key_last($flow)]->breakAfter || in_array($s->breakAfter, ['page', 'always'], true);
+        if ($s->breakInsideAvoid) {
+            foreach ($flow as $item) {
+                $item->avoidGroups[] = $node->id;
+            }
+        }
+        $this->account($flow);
+
+        return $flow;
+    }
+
+    /**
+     * @return list<FlowItem>
+     */
+    private function children(Node $node, float $x, float $width, string $semantic): array
+    {
+        if ($width <= 0) {
+            throw new UnsupportedFeature('List indentation leaves no available width.');
+        }
+        $flow = [];
+        $inlineNodes = [];
+        $listIndex = (int) ($node->attribute('start') ?? '1');
+        foreach ($node->children as $child) {
+            if ($child->style->display === 'none') {
+                continue;
+            }
+            if ($child->isText() || $child->style->display === 'inline' || $child->tag === 'br') {
+                $inlineNodes[] = $child;
+                continue;
+            }
+            $inlineFlow = $this->flush($inlineNodes, $x, $width, $node->style, $semantic);
+            array_push($flow, ...$inlineFlow);
+            $inlineNodes = [];
+            $marker = null;
+            if ($child->tag === 'li') {
+                if ($child->attribute('value') !== null) {
+                    $listIndex = (int) $child->attribute('value');
+                }
+                $marker = match ($child->style->listStyleType) {
+                    'none' => null,
+                    'decimal' => $listIndex . '.',
+                    'circle' => '○',
+                    'square' => '▪',
+                    default => $node->tag === 'ol' ? $listIndex . '.' : '•',
+                };
+                ++$listIndex;
+            }
+            $childFlow = $this->build($child, $x, $width, $semantic, marker: $marker);
+            array_push($flow, ...$childFlow);
+        }
+
+        return $this->margins->collapse([...$flow, ...$this->flush($inlineNodes, $x, $width, $node->style, $semantic)]);
+    }
+
+    /** @param list<Node> $nodes
+     * @return list<FlowItem>
+     */
+    private function flush(array $nodes, float $x, float $width, ComputedStyle $style, string $semantic): array
+    {
+        if ($nodes === []) {
+            return [];
+        }
+        $pieces = [];
+        foreach ($nodes as $node) {
+            $pieces = [...$pieces, ...$this->collect($node, $semantic, $width)];
+        }
+
+        return $this->inline->format($pieces, $x, $width, $style, 'paragraph-' . ++$this->paragraph);
+    }
+
+    /**
+     * @return list<InlinePiece>
+     */
+    private function collect(Node $node, string $parent, float $width, ?string $uri = null): array
+    {
+        if ($node->style->display === 'none') {
+            return [];
+        }
+        if ($node->isText()) {
+            return $node->text === '' ? [] : [new InlinePiece($node->text, $node->style, $this->semantics->add('Span', $parent), $uri)];
+        }
+        $semantic = $node->tag === 'img' && $node->attribute('alt') === '' ? $parent : $this->semantics->forNode($node, $parent);
+        if ($node->tag === 'br') {
+            return [new InlinePiece('', $node->style, $semantic, lineBreak: true)];
+        }
+        if ($node->tag === 'img') {
+            if ($uri !== null) {
+                throw new UnsupportedFeature('Linked images are not supported by the initial annotation profile.');
+            }
+            if ($node->style->padding->horizontal() !== 0.0 || $node->style->padding->vertical() !== 0.0 || $node->style->borderWidth !== 0.0 || $node->style->margin->horizontal() !== 0.0) {
+                throw new UnsupportedFeature('Inline image box decorations require display:block in this layout profile.');
+            }
+            return [$this->image($node, $width, $semantic)];
+        }
+        if ($node->style->display !== 'inline') {
+            throw new UnsupportedFeature('A block nested inside an inline formatting context is not supported.');
+        }
+        if ($node->style->margin->horizontal() !== 0.0 || $node->style->padding->horizontal() !== 0.0 || $node->style->padding->vertical() !== 0.0 || $node->style->borderWidth !== 0.0) {
+            throw new UnsupportedFeature('Inline margins, padding and borders are outside this layout profile.');
+        }
+        $uri = $node->tag === 'a' ? $node->attribute('href') : $uri;
+        $pieces = [];
+        foreach ($node->children as $child) {
+            $pieces = [...$pieces, ...$this->collect($child, $semantic, $width, $uri)];
+        }
+
+        return $pieces;
+    }
+
+    private function image(Node $node, float $basis, string $semantic): InlinePiece
+    {
+        $source = $node->attribute('src') ?? throw new UnsupportedFeature('Images require an explicit source resource.');
+        $asset = $this->options->resources->image($source);
+        $width = $node->style->width?->resolve($basis);
+        if ($node->style->height?->percentage) {
+            throw new UnsupportedFeature('Percentage image heights require a definite containing height.');
+        }
+        $height = $node->style->height?->value;
+        if ($width === null && $height === null) {
+            $width = $asset->width * 0.75;
+            $height = $asset->height * 0.75;
+        } elseif ($width === null) {
+            $width = $height * $asset->width / $asset->height;
+        } elseif ($height === null) {
+            $height = $width * $asset->height / $asset->width;
+        }
+        if ($width <= 0 || $height <= 0 || $height > $this->options->page->contentHeight()) {
+            throw new UnsupportedFeature('An image must have positive dimensions and fit within a page.');
+        }
+        if ($node->attribute('alt') === null) {
+            throw new UnsupportedFeature('Images require alt text, or an explicit empty alt for decoration.');
+        }
+
+        return new InlinePiece('', $node->style, $node->attribute('alt') === '' ? null : $semantic, image: $asset, imageWidth: $width, imageHeight: $height);
+    }
+
+    /**
+     * @return list<FlowItem>
+     */
+    private function table(Node $node, float $x, float $width, string $semantic): array
+    {
+        if ($node->style->tableLayout !== 'fixed') {
+            $this->diagnostics->unsupported('layout.table-auto', 'Automatic table sizing is unsupported; table-layout:fixed is required. Report policy falls back to fixed columns.', $node->id);
+        }
+        $rows = [];
+        $headers = [];
+        $prefix = [];
+        foreach ($node->children as $child) {
+            if ($child->style->display === 'none' || ($child->isText() && trim($child->text) === '')) {
+                continue;
+            }
+            if ($child->tag === 'caption') {
+                $prefix = [...$prefix, ...$this->build($child, $x, $width, $semantic)];
+            } elseif ($child->tag === 'tr') {
+                $rows[] = $child;
+            } elseif (in_array($child->tag, ['thead', 'tbody', 'tfoot'], true)) {
+                if ($child->tag === 'tfoot') {
+                    throw new UnsupportedFeature('Repeating table footers are outside the initial table profile.');
+                }
+                if ($child->style->background !== null) {
+                    throw new UnsupportedFeature('Table row-group backgrounds are unsupported; apply the background to rows or cells.');
+                }
+                foreach ($child->children as $row) {
+                    if ($row->style->display === 'none') {
+                        continue;
+                    }
+                    if ($row->isText() && trim($row->text) === '') {
+                        continue;
+                    }
+                    if ($row->tag !== 'tr') {
+                        throw new UnsupportedFeature('Table row groups may only contain rows.');
+                    }
+                    if ($child->tag === 'thead') {
+                        $headers[] = $row;
+                    } else {
+                        $rows[] = $row;
+                    }
+                }
+            } else {
+                throw new UnsupportedFeature('Only captions and rectangular rows are supported inside tables.');
+            }
+        }
+        $all = [...$headers, ...$rows];
+        if ($all === []) {
+            return $prefix;
+        }
+        $firstCells = $this->cells($all[0]);
+        $count = count($firstCells);
+        if ($count === 0) {
+            throw new UnsupportedFeature('A table row requires cells.');
+        }
+        $widths = [];
+        $specified = 0.0;
+        $automatic = 0;
+        foreach ($firstCells as $cell) {
+            $cellWidth = $cell->style->width?->resolve($width);
+            $widths[] = $cellWidth;
+            $specified += $cellWidth ?? 0;
+            $automatic += $cellWidth === null ? 1 : 0;
+        }
+        if ($specified > $width + 0.001 || ($automatic > 0 && $specified >= $width)) {
+            throw new UnsupportedFeature('Specified table column widths leave insufficient space.');
+        }
+        if ($automatic === 0 && abs($specified - $width) > 0.001) {
+            throw new UnsupportedFeature('Explicit table columns must add up to the table content width.');
+        }
+        foreach ($widths as &$columnWidth) {
+            $columnWidth ??= ($width - $specified) / $automatic;
+        }
+        unset($columnWidth);
+        $builtHeaders = [];
+        $flow = $prefix;
+        foreach ($all as $rowIndex => $row) {
+            $cells = $this->cells($row);
+            if (count($cells) !== $count) {
+                throw new UnsupportedFeature('Table rows must have the same number of unmerged cells.');
+            }
+            $rowSemantic = $this->semantics->forNode($row, $semantic);
+            $cellFlows = [];
+            $height = 0.0;
+            $cellX = $x;
+            foreach ($cells as $index => $cell) {
+                if ($cell->style->margin->horizontal() !== 0.0 || $cell->style->margin->vertical() !== 0.0) {
+                    throw new UnsupportedFeature('Table cell margins are not supported. Use padding.');
+                }
+                if ($cell->style->width !== null && abs($cell->style->width->resolve($width) - $widths[$index]) > 0.001) {
+                    throw new UnsupportedFeature('Conflicting column widths across table rows are not supported.');
+                }
+                // Column allocation is the border box; a cell's width declaration selected it above.
+                $styleValues = get_object_vars($cell->style);
+                $styleValues['width'] = null;
+                $styleValues['background'] = null;
+                $styleValues['borderWidth'] = 0;
+                $padding = $cell->style->padding;
+                $border = $cell->style->borderWidth;
+                $styleValues['padding'] = new Edges($padding->top + $border, $padding->right + $border, $padding->bottom + $border, $padding->left + $border);
+                $cellCopy = new Node($cell->id, $cell->tag, $cell->attributes, $cell->children, $cell->text, new ComputedStyle(...$styleValues));
+                $cellFlow = $this->build($cellCopy, $cellX, $widths[$index], $rowSemantic);
+                foreach ($cellFlow as $item) {
+                    if ($item->breakBefore || $item->breakAfter || $item->table !== null) {
+                        throw new UnsupportedFeature('Page breaks and nested tables inside indivisible table rows are unsupported.');
+                    }
+                }
+                $cellHeight = array_sum(array_map(static fn(FlowItem $item): float => $item->height, $cellFlow));
+                $cellFlows[] = [$cellFlow, $cellHeight, $cell->style, $cellX, $widths[$index]];
+                $height = max($height, $cellHeight);
+                $cellX += $widths[$index];
+            }
+            if ($row->style->height !== null) {
+                if ($row->style->height->percentage) {
+                    throw new UnsupportedFeature('Percentage table row heights are not supported.');
+                }
+                $height = max($height, $row->style->height->value);
+            }
+            if ($height > $this->options->page->contentHeight()) {
+                throw new UnsupportedFeature('A table row is taller than a page; row splitting is not supported.');
+            }
+            $commands = $row->style->background === null ? [] : [new Rectangle($x, 0, $width, $height, $row->style->background)];
+            foreach ($cellFlows as [$cellFlow, $cellHeight, $cellStyle, $cellX, $cellWidth]) {
+                if ($cellStyle->background !== null) {
+                    $commands[] = new Rectangle($cellX, 0, $cellWidth, $height, $cellStyle->background);
+                }
+                if ($cellStyle->borderWidth > 0) {
+                    $border = $cellStyle->borderWidth;
+                    $commands[] = new Rectangle($cellX, 0, $cellWidth, $border, $cellStyle->borderColor);
+                    $commands[] = new Rectangle($cellX, $height - $border, $cellWidth, $border, $cellStyle->borderColor);
+                    $commands[] = new Rectangle($cellX, 0, $border, $height, $cellStyle->borderColor);
+                    $commands[] = new Rectangle($cellX + $cellWidth - $border, 0, $border, $height, $cellStyle->borderColor);
+                }
+                $offset = match ($cellStyle->verticalAlign) {
+                    'middle' => ($height - $cellHeight) / 2,
+                    'bottom' => $height - $cellHeight,
+                    default => 0,
+                };
+                foreach ($cellFlow as $item) {
+                    foreach ($item->commands as $command) {
+                        $commands[] = $this->translation->move($command, 0, $offset);
+                    }
+                    $offset += $item->height;
+                }
+            }
+            $item = new FlowItem($height, $commands);
+            $item->table = $node->id;
+            $item->breakBefore = in_array($row->style->breakBefore, ['page', 'always'], true);
+            $item->breakAfter = in_array($row->style->breakAfter, ['page', 'always'], true);
+            if ($rowIndex < count($headers)) {
+                $builtHeaders[] = $item;
+            } else {
+                $item->headers = $builtHeaders;
+                if ($height + array_sum(array_map(static fn(FlowItem $header): float => $header->height, $builtHeaders)) > $this->options->page->contentHeight() + 0.001) {
+                    throw new UnsupportedFeature('The repeated table header and one row must fit together on a page.');
+                }
+            }
+            $flow[] = $item;
+        }
+        // Keep the first table header with the first body row.
+        $keepCount = min(count($all), count($headers) + 1);
+        for ($index = count($prefix); $index < count($prefix) + $keepCount; ++$index) {
+            $flow[$index]->avoidGroups[] = 'table-start-' . $node->id;
+        }
+
+        return $flow;
+    }
+
+    /** @return list<Node> */
+    private function cells(Node $row): array
+    {
+        $cells = [];
+        foreach ($row->children as $cell) {
+            if ($cell->style->display === 'none' || ($cell->isText() && trim($cell->text) === '')) {
+                continue;
+            }
+            if (!in_array($cell->tag, ['th', 'td'], true) || (int) ($cell->attribute('colspan') ?? '1') !== 1 || (int) ($cell->attribute('rowspan') ?? '1') !== 1) {
+                throw new UnsupportedFeature('Only rectangular table rows without merged cells are supported.');
+            }
+            $cells[] = $cell;
+        }
+
+        return $cells;
+    }
+
+    /** @param list<FlowItem> $flow */
+    private function account(array $flow): void
+    {
+        // Counting nested observations as work also bounds copying and decoration expansion.
+        $this->items += count($flow);
+        foreach ($flow as $item) {
+            $this->commands += count($item->commands);
+        }
+        if ($this->items > $this->options->limits->maxCommands * 4 || $this->commands > $this->options->limits->maxCommands * 8) {
+            throw new LimitExceeded('Layout construction work budget exhausted.');
+        }
+    }
+}

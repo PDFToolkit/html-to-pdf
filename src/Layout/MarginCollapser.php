@@ -1,0 +1,33 @@
+<?php
+
+declare(strict_types=1);
+
+namespace PDF\HtmlToPdf\Layout;
+
+/** Positive CSS adjoining margins form one maximum, including through empty blocks. */
+final readonly class MarginCollapser
+{
+    /**
+     * @param list<FlowItem> $items
+     * @return list<FlowItem>
+     */
+    public function collapse(array $items): array
+    {
+        $result = [];
+        foreach ($items as $item) {
+            if ($item->height === 0.0 && $item->commands === [] && !$item->breakBefore && !$item->breakAfter) {
+                continue;
+            }
+            $last = $result === [] ? null : $result[array_key_last($result)];
+            if ($item->margin && $last?->margin && !$last->breakAfter && !$item->breakBefore) {
+                $last->height = max($last->height, $item->height);
+                $last->avoidGroups = array_values(array_unique([...$last->avoidGroups, ...$item->avoidGroups]));
+                $last->breakAfter = $item->breakAfter;
+            } else {
+                $result[] = $item;
+            }
+        }
+
+        return $result;
+    }
+}
