@@ -9,13 +9,16 @@ use PDF\HtmlToPdf\Diagnostics;
 use PDF\HtmlToPdf\Drawing\BorderBox;
 use PDF\HtmlToPdf\Drawing\Image;
 use PDF\HtmlToPdf\Drawing\Rectangle;
+use PDF\HtmlToPdf\Drawing\RadioButton;
 use PDF\HtmlToPdf\Drawing\Text;
 use PDF\HtmlToPdf\Exception\LimitExceeded;
 use PDF\HtmlToPdf\Exception\UnsupportedFeature;
+use PDF\HtmlToPdf\FormControls;
 use PDF\HtmlToPdf\Model\Node;
 use PDF\HtmlToPdf\Style\Borders;
 use PDF\HtmlToPdf\Style\ComputedStyle;
 use PDF\HtmlToPdf\Style\Edges;
+use PDF\HtmlToPdf\Style\RadioSnapshotStyle;
 
 /** Builds bounded, page-independent flow slices. No shared caches or external resources. */
 final class FlowBuilder
@@ -37,11 +40,15 @@ final class FlowBuilder
     /**
      * @return list<FlowItem>
      */
-    public function build(Node $node, float $x, float $available, string $parent, bool $root = false, ?string $marker = null, ?string $uri = null): array
+    public function build(Node $node, float $x, float $available, string $parent, bool $root = false, ?string $marker = null, ?string $uri = null, ?FloatContext $floats = null, float $top = 0, bool $floating = false): array
     {
         $s = $node->style;
         if ($s->display === 'none') {
             return [];
+        }
+        if ($node->tag === 'input') {
+            $this->validateRadio($node);
+            throw new UnsupportedFeature('Radio snapshots require an inline formatting context.');
         }
         $uri = $node->tag === 'a' ? $node->attribute('href') : $uri;
         if ($node->tag === 'img' && $uri !== null) {
@@ -67,6 +74,9 @@ final class FlowBuilder
         $innerX = $outerX + $edges->left + $s->padding->left;
         $markerWidth = $marker === null ? 0.0 : max(18.0, $this->inline->face($s)->measure($marker . ' ', $s->fontSize));
         if ($node->tag === 'table') {
+            if ($floats !== null) {
+                throw new UnsupportedFeature('Combining table formatting and floats is outside this layout profile.');
+            }
             $flow = $this->table($node, $innerX, $width, $semantic, $uri);
         } elseif ($node->tag === 'hr') {
             $height = $s->height?->resolve($this->options->page->contentHeight()) ?? max(1.0, $edges->top);
@@ -74,7 +84,7 @@ final class FlowBuilder
         } elseif ($node->tag === 'img') {
             $flow = [new FlowItem($blockImage->imageHeight, [new Image($innerX, 0, $blockImage->imageWidth, $blockImage->imageHeight, $blockImage->image, $blockImage->semanticId)])];
         } else {
-            $flow = $this->children($node, $innerX + $markerWidth, $width - $markerWidth, $semantic, $uri);
+            $flow = $this->children($node, $innerX + $markerWidth, $width - $markerWidth, $semantic, $uri, $floats, $top + $s->margin->top + $edges->top + $s->padding->top);
         }
         if ($marker !== null && $label !== null) {
             if ($flow === []) {
@@ -102,9 +112,12 @@ final class FlowBuilder
         $flow = $this->margins->collapse($flow);
         $topMargin = new FlowItem($s->margin->top);
         $bottomMargin = new FlowItem($s->margin->bottom);
-        $topMargin->margin = $bottomMargin->margin = true;
-        $normalBlock = in_array($s->display, ['block', 'list-item'], true) && !in_array($node->tag, ['img', 'hr'], true);
+        $topMargin->margin = $bottomMargin->margin = !$floating;
+        $normalBlock = !$floating && in_array($s->display, ['block', 'list-item'], true) && !in_array($node->tag, ['img', 'hr'], true);
         if ($normalBlock && $s->padding->top + $edges->top === 0.0 && $flow !== [] && $flow[0]->margin && !$flow[0]->breakBefore) {
+            if ($floats !== null) {
+                throw new UnsupportedFeature('Parent-child margin collapse inside float contexts is outside this layout profile. Add explicit padding or border to separate the margins.');
+            }
             $childMargin = array_shift($flow);
             $topMargin->height = max($topMargin->height, $childMargin->height);
             $topMargin->avoidGroups = $childMargin->avoidGroups;
@@ -119,12 +132,23 @@ final class FlowBuilder
             $item->margin = false;
         }
         $height = array_sum(array_map(static fn(FlowItem $item): float => $item->height, $flow));
+        if ($floating && $floats !== null && $s->height === null) {
+            $contentTop = $top + $s->margin->top + $edges->top + $s->padding->top;
+            $floatHeight = $floats->clear('both', $contentTop) - $contentTop;
+            if ($floatHeight > $height) {
+                $flow[] = new FlowItem($floatHeight - $height);
+                $height = $floatHeight;
+            }
+        }
         if ($s->height !== null && $node->tag !== 'img' && $node->tag !== 'hr') {
             if ($s->height->percentage) {
                 throw new UnsupportedFeature('Percentage block heights require a definite containing height and are outside this profile.');
             }
             if ($height > $s->height->value + 0.001) {
-                throw new UnsupportedFeature('Content exceeds an explicit block height.');
+                if ($floats === null) {
+                    throw new UnsupportedFeature('Content exceeds an explicit block height.');
+                }
+                $flow = [(new FlowAssembly())->combine($flow, $s->height->value)];
             }
             if ($s->height->value > $height) {
                 $flow[] = new FlowItem($s->height->value - $height);
@@ -138,6 +162,9 @@ final class FlowBuilder
         $topInset = $s->padding->top + $edges->top;
         $bottomInset = $s->padding->bottom + $edges->bottom;
         $flow[0]->height += $topInset;
+        if ($flow[0]->paintHeight !== null) {
+            $flow[0]->paintHeight += $topInset;
+        }
         foreach ($flow[0]->commands as $index => $command) {
             $flow[0]->commands[$index] = $this->translation->move($command, 0, $topInset);
         }
@@ -161,13 +188,17 @@ final class FlowBuilder
         $boxWidth = $width + $extras;
         $boxHeight = array_sum(array_map(static fn(FlowItem $item): float => $item->height, $flow));
         $offset = 0.0;
-        foreach ($flow as $item) {
+        foreach ($flow as $index => $item) {
             $decorations = [];
-            if ($s->background !== null && $item->height > 0) {
-                $decorations[] = new Rectangle($outerX, 0, $boxWidth, $item->height, $s->background, semanticId: $semantic);
+            $decorationHeight = $floats === null ? $item->height : ($index === 0 ? $boxHeight : 0.0);
+            if ($s->background !== null && $decorationHeight > 0) {
+                $decorations[] = new Rectangle($outerX, 0, $boxWidth, $decorationHeight, $s->background, semanticId: $semantic);
             }
-            if ($borders->hasWidth() && $item->height > 0) {
-                $decorations[] = new BorderBox($outerX, 0, $boxWidth, $item->height, $borders, $offset, $boxHeight, $semantic);
+            if ($borders->hasWidth() && $decorationHeight > 0) {
+                $decorations[] = new BorderBox($outerX, 0, $boxWidth, $decorationHeight, $borders, $offset, $boxHeight, $semantic);
+            }
+            if ($decorations !== [] && $floats !== null) {
+                $item->paintHeight = max($item->extent(), $decorationHeight);
             }
             $item->commands = [...$decorations, ...$item->commands];
             $offset += $item->height;
@@ -197,7 +228,7 @@ final class FlowBuilder
     /**
      * @return list<FlowItem>
      */
-    private function children(Node $node, float $x, float $width, string $semantic, ?string $uri): array
+    private function children(Node $node, float $x, float $width, string $semantic, ?string $uri, ?FloatContext $floats = null, float $top = 0): array
     {
         if ($width <= 0) {
             throw new UnsupportedFeature('List indentation leaves no available width.');
@@ -205,19 +236,19 @@ final class FlowBuilder
         $flow = [];
         $inlineNodes = [];
         $listCounter = null;
-        foreach ($node->children as $child) {
+        foreach ((new InlineBlockSplitter())->split($node->children) as $child) {
             if ($child->style->display === 'none') {
                 continue;
             }
-            if ($child->isText() || $child->style->display === 'inline' || $child->tag === 'br') {
+            if ($child->isText() || ($child->style->float === 'none' && $child->style->display === 'inline') || $child->tag === 'br') {
                 $inlineNodes[] = $child;
                 continue;
             }
-            $inlineFlow = $this->flush($inlineNodes, $x, $width, $node->style, $semantic, $uri);
+            $inlineFlow = $this->flush($inlineNodes, $x, $width, $node->style, $semantic, $uri, $floats, $top + $this->height($flow));
             array_push($flow, ...$inlineFlow);
             $inlineNodes = [];
             $marker = null;
-            if ($child->tag === 'li') {
+            if ($child->tag === 'li' && $child->style->display === 'list-item') {
                 $listCounter ??= new ListCounter($node->attribute('start'));
                 $listIndex = $listCounter->next($child->attribute('value'));
                 $marker = match ($child->style->listStyleType) {
@@ -228,17 +259,69 @@ final class FlowBuilder
                     default => '•',
                 };
             }
-            $childFlow = $this->build($child, $x, $width, $semantic, marker: $marker, uri: $uri);
+            $position = $top + $this->height($flow);
+            if ($floats !== null && $child->style->float !== 'none') {
+                $flow[] = $this->floating($child, $x, $width, $position, $semantic, $marker, $uri, $floats);
+                continue;
+            }
+            if ($floats !== null) {
+                $cursor = $position;
+                $last = $flow === [] ? null : $flow[array_key_last($flow)];
+                if ($last?->margin) {
+                    $position -= min($last->height, $child->style->margin->top);
+                }
+                $borderTop = $position + $child->style->margin->top;
+                $cleared = $floats->clear($child->style->clear, $borderTop);
+                if ($cleared > $borderTop + 0.001) {
+                    $gap = max(0.0, $cleared - $cursor - $child->style->margin->top);
+                    $clearance = new FlowItem($gap);
+                    $clearance->marginBoundary = true;
+                    $flow[] = $clearance;
+                    $position = $cursor + $gap;
+                }
+            }
+            $childFlow = $this->build($child, $x, $width, $semantic, marker: $marker, uri: $uri, floats: $floats, top: $position);
             array_push($flow, ...$childFlow);
+            $flow = $this->margins->collapse($flow);
         }
 
-        return $this->margins->collapse([...$flow, ...$this->flush($inlineNodes, $x, $width, $node->style, $semantic, $uri)]);
+        return $this->margins->collapse([...$flow, ...$this->flush($inlineNodes, $x, $width, $node->style, $semantic, $uri, $floats, $top + $this->height($flow))]);
+    }
+
+    private function floating(Node $node, float $x, float $width, float $top, string $semantic, ?string $marker, ?string $uri, FloatContext $floats): FlowItem
+    {
+        if ($node->style->width === null) {
+            throw new UnsupportedFeature('Floated boxes require an explicit width in this layout profile.');
+        }
+        if (!in_array($node->style->display, ['block', 'inline', 'list-item'], true) || in_array($node->tag, ['table', 'tr', 'td', 'th'], true)) {
+            throw new UnsupportedFeature('Floating table layout is outside this layout profile.');
+        }
+        $boxWidth = $node->style->width->resolve($width) + $node->style->padding->horizontal() + $node->style->borderEdges()->widths()->horizontal() + $node->style->margin->horizontal();
+        $nested = $floats->nested();
+        $box = (new FlowAssembly())->combine($this->build($node, 0, $width, $semantic, marker: $marker, uri: $uri, floats: $nested, floating: true));
+        $placement = $floats->place($node->style->float, $boxWidth, $box->height, $floats->clear($node->style->clear, $top), $x, $width);
+        $commands = [];
+        foreach ($box->commands as $command) {
+            $commands[] = $this->translation->move($command, $placement->x, $placement->top - $top);
+        }
+        $item = new FlowItem(0, $commands);
+        $item->paintHeight = $placement->top - $top + $box->extent();
+        $item->breakBefore = $box->breakBefore;
+        $item->breakAfter = $box->breakAfter;
+
+        return $item;
+    }
+
+    /** @param list<FlowItem> $flow */
+    private function height(array $flow): float
+    {
+        return array_sum(array_map(static fn(FlowItem $item): float => $item->height, $flow));
     }
 
     /** @param list<Node> $nodes
      * @return list<FlowItem>
      */
-    private function flush(array $nodes, float $x, float $width, ComputedStyle $style, string $semantic, ?string $uri): array
+    private function flush(array $nodes, float $x, float $width, ComputedStyle $style, string $semantic, ?string $uri, ?FloatContext $floats = null, float $top = 0): array
     {
         if ($nodes === []) {
             return [];
@@ -248,7 +331,7 @@ final class FlowBuilder
             $pieces = [...$pieces, ...$this->collect($node, $semantic, $width, $uri)];
         }
 
-        return $this->inline->format($pieces, $x, $width, $style, 'paragraph-' . ++$this->paragraph);
+        return $this->inline->format($pieces, $x, $width, $style, 'paragraph-' . ++$this->paragraph, $floats === null ? null : new LineExclusions($floats, $x, $width), $top);
     }
 
     /**
@@ -265,6 +348,10 @@ final class FlowBuilder
         $semantic = $node->tag === 'img' && $node->attribute('alt') === '' ? $parent : $this->semantics->forNode($node, $parent);
         if ($node->tag === 'br') {
             return [new InlinePiece('', $node->style, $semantic, lineBreak: true)];
+        }
+        if ($node->tag === 'input') {
+            $this->validateRadio($node);
+            return [new InlinePiece('', $node->style, $semantic, radio: new RadioButton(0, 0, 9.75, 9.75, $node->attribute('checked') !== null, $node->attribute('disabled') !== null, $semantic))];
         }
         if ($node->tag === 'img') {
             if ($uri !== null) {
@@ -288,6 +375,14 @@ final class FlowBuilder
         }
 
         return $pieces;
+    }
+
+    private function validateRadio(Node $node): void
+    {
+        if ($this->options->formControls !== FormControls::StaticSnapshot || $node->attribute('type') !== 'radio') {
+            throw new UnsupportedFeature('Only explicitly enabled static radio snapshots are supported.');
+        }
+        (new RadioSnapshotStyle())->validate($node->style);
     }
 
     private function image(Node $node, float $basis, string $semantic): InlinePiece

@@ -13,6 +13,7 @@ use PDF\Document\Structure\StructureTreeRoot;
 use PDF\HtmlToPdf\ConversionLimits;
 use PDF\HtmlToPdf\Drawing\BorderBox;
 use PDF\HtmlToPdf\Drawing\Image;
+use PDF\HtmlToPdf\Drawing\RadioButton;
 use PDF\HtmlToPdf\Drawing\Rectangle;
 use PDF\HtmlToPdf\Drawing\Text;
 use PDF\HtmlToPdf\Exception\ConversionException;
@@ -96,7 +97,7 @@ final class SemanticTree
             foreach ($page->commands as $command) {
                 if ($command instanceof Text) {
                     $bounds = (new TextBounds())->calculate($command, $fonts->run($command), $page->height);
-                } elseif ($command instanceof Rectangle || $command instanceof Image || $command instanceof BorderBox) {
+                } elseif ($command instanceof Rectangle || $command instanceof Image || $command instanceof BorderBox || $command instanceof RadioButton) {
                     $bounds = new Bounds($command->x, $page->height - $command->y - $command->height, $command->x + $command->width, $page->height - $command->y);
                 } else {
                     throw new ConversionException('Unsupported drawing command.');
@@ -161,7 +162,7 @@ final class SemanticTree
     {
         $source = $this->sources[$id] ?? throw new ConversionException('Drawing references an unknown semantic node.');
         do {
-            if (in_array($source->role, ['Table', 'Figure'], true)) {
+            if (in_array($source->role, ['Table', 'Figure', 'Form'], true)) {
                 $previous = $this->bounds[$source->id][$page] ?? null;
                 $this->bounds[$source->id][$page] = $previous === null ? $bounds : $previous->union($bounds);
             }
@@ -173,12 +174,12 @@ final class SemanticTree
     {
         $attributes = [];
         $bounds = $this->bounds[$source->id] ?? [];
-        if (in_array($source->role, ['Table', 'Figure'], true) && $bounds !== []) {
+        if (in_array($source->role, ['Table', 'Figure', 'Form'], true) && $bounds !== []) {
             $entries = [new Entry(new NameType('O'), new NameType('Layout'))];
             if (count($bounds) === 1) {
                 $entries[] = new Entry(new NameType('BBox'), array_values($bounds)[0]->pdf());
             }
-            if ($source->role === 'Figure') {
+            if (in_array($source->role, ['Figure', 'Form'], true)) {
                 $width = max(array_map(static fn(Bounds $box): float => $box->right - $box->left, $bounds));
                 $height = max(array_map(static fn(Bounds $box): float => $box->top - $box->bottom, $bounds));
                 $entries[] = new Entry(new NameType('Placement'), new NameType('Inline'));
@@ -186,6 +187,17 @@ final class SemanticTree
                 $entries[] = new Entry(new NameType('Height'), new NumericType($height));
             }
             $attributes[] = new AttributeAssociation(new StructureAttributeObject(new DictionaryType(...$entries)));
+        }
+        if ($source->role === 'Form') {
+            if ($source->checked === null) {
+                throw new ConversionException('Static radio semantics require an explicit checked state.');
+            }
+            $attributes[] = new AttributeAssociation(new StructureAttributeObject(new DictionaryType(
+                new Entry(new NameType('O'), new NameType('PrintField')),
+                new Entry(new NameType('Role'), new NameType('rb')),
+                new Entry(new NameType('checked'), new NameType($source->checked ? 'on' : 'off')),
+                new Entry(new NameType('Desc'), new TextString($source->alt ?? 'Radio button')),
+            )));
         }
         if ($source->scope !== null) {
             if ($source->role !== 'TH' || !in_array($source->scope, ['Row', 'Column', 'Both'], true)) {

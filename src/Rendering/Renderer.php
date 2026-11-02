@@ -16,6 +16,7 @@ use PDF\FileStructure;
 use PDF\HtmlToPdf\ConversionLimits;
 use PDF\HtmlToPdf\Drawing\BorderBox;
 use PDF\HtmlToPdf\Drawing\Image;
+use PDF\HtmlToPdf\Drawing\RadioButton;
 use PDF\HtmlToPdf\Drawing\Rectangle;
 use PDF\HtmlToPdf\Drawing\Text;
 use PDF\HtmlToPdf\Exception\ConversionException;
@@ -93,7 +94,7 @@ final readonly class Renderer
                 if (++$count > $this->limits->maxCommands) {
                     throw new LimitExceeded('Cumulative drawing command budget exceeded.');
                 }
-                if (!$command instanceof Text && !$command instanceof Rectangle && !$command instanceof Image && !$command instanceof BorderBox) {
+                if (!$command instanceof Text && !$command instanceof Rectangle && !$command instanceof Image && !$command instanceof BorderBox && !$command instanceof RadioButton) {
                     throw new ConversionException('Unknown drawing command.');
                 }
                 if (!is_finite($command->x) || !is_finite($command->y)) {
@@ -109,7 +110,7 @@ final readonly class Renderer
                     $fonts->prepare($command);
                 } else {
                     if (!is_finite($command->width) || !is_finite($command->height) || min($command->width, $command->height) < 0
-                        || ($command instanceof Image && min($command->width, $command->height) == 0)) {
+                        || (($command instanceof Image || $command instanceof RadioButton) && min($command->width, $command->height) == 0)) {
                         throw new ConversionException('Drawing dimensions must be finite and non-negative.');
                     }
                     if ($command instanceof Image) {

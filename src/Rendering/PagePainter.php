@@ -14,6 +14,7 @@ use PDF\Fonts\OpenType\PositionedText;
 use PDF\Graphics\CoordinateSystems\Matrix;
 use PDF\HtmlToPdf\Drawing\BorderBox;
 use PDF\HtmlToPdf\Drawing\Image;
+use PDF\HtmlToPdf\Drawing\RadioButton;
 use PDF\HtmlToPdf\Drawing\Rectangle;
 use PDF\HtmlToPdf\Drawing\Text;
 use PDF\HtmlToPdf\Exception\ConversionException;
@@ -65,7 +66,7 @@ final class PagePainter
         $annotations = [];
         $objects = [];
         foreach ($layout->commands as $command) {
-            if (!$command instanceof Text && !$command instanceof Rectangle && !$command instanceof Image && !$command instanceof BorderBox) {
+            if (!$command instanceof Text && !$command instanceof Rectangle && !$command instanceof Image && !$command instanceof BorderBox && !$command instanceof RadioButton) {
                 throw new ConversionException('Unsupported drawing command.');
             }
             $semanticId = ($command instanceof Rectangle || $command instanceof BorderBox) ? null : $command->semanticId;
@@ -107,6 +108,8 @@ final class PagePainter
                     new NumericType($layout->height - $command->y - $command->height),
                 ));
                 $operators[] = new InvokeXObject($this->images->name($command->asset));
+            } elseif ($command instanceof RadioButton) {
+                array_push($operators, ...(new RadioButtonPainter())->operators($command, $layout->height));
             } elseif ($command instanceof BorderBox) {
                 array_push($operators, ...(new BorderPainter())->operators($command, $layout->height));
             } elseif ($command instanceof Rectangle) {
