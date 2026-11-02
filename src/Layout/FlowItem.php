@@ -20,6 +20,9 @@ final class FlowItem
     public array $headers = [];
     public ?string $table = null;
     public bool $margin = false;
+    public bool $marginBoundary = false;
+    /** Visible overflow does not increase a CSS box's normal-flow height. */
+    public ?float $paintHeight = null;
 
     /** @param list<Command> $commands */
     public function __construct(public float $height, public array $commands = [])
@@ -27,5 +30,10 @@ final class FlowItem
         if (!is_finite($height) || $height < 0) {
             throw new \InvalidArgumentException('Flow heights must be finite and non-negative.');
         }
+    }
+
+    public function extent(): float
+    {
+        return max($this->height, $this->paintHeight ?? 0.0);
     }
 }

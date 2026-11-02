@@ -15,7 +15,7 @@ final readonly class MarginCollapser
     {
         $result = [];
         foreach ($items as $item) {
-            if ($item->height === 0.0 && $item->commands === [] && !$item->breakBefore && !$item->breakAfter) {
+            if ($item->extent() === 0.0 && $item->commands === [] && !$item->breakBefore && !$item->breakAfter && !$item->marginBoundary) {
                 continue;
             }
             $last = $result === [] ? null : $result[array_key_last($result)];
