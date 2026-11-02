@@ -1,0 +1,884 @@
+{
+  "schemaVersion": 1,
+  "packageVersion": "0.1.0",
+  "activeStage": "css1",
+  "stageOrder": [
+    "css1",
+    "css2",
+    "css21",
+    "modules"
+  ],
+  "stages": [
+    {
+      "id": "css1",
+      "label": "CSS Level 1",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
+      "claimedComplete": false,
+      "inventoryComplete": true
+    },
+    {
+      "id": "css2",
+      "label": "CSS Level 2 (historical)",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS2-20080411/",
+      "claimedComplete": false,
+      "inventoryComplete": false
+    },
+    {
+      "id": "css21",
+      "label": "CSS Level 2 Revision 1",
+      "reference": "https://www.w3.org/TR/2011/REC-CSS2-20110607/",
+      "claimedComplete": false,
+      "inventoryComplete": false
+    },
+    {
+      "id": "modules",
+      "label": "Independently versioned CSS modules",
+      "reference": "https://www.w3.org/TR/2025/NOTE-css-2025-20250918/",
+      "claimedComplete": false,
+      "inventoryComplete": false
+    }
+  ],
+  "requirements": [
+    {
+      "id": "css1.property.font-family",
+      "kind": "property",
+      "name": "font-family",
+      "section": "5.2.2",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#font-family",
+      "status": "unsupported",
+      "sample": "serif",
+      "context": "div",
+      "note": "Explicit FontSet only; CSS family matching and fallback chains are absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.font-style",
+      "kind": "property",
+      "name": "font-style",
+      "section": "5.2.3",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#font-style",
+      "status": "partial",
+      "sample": "italic",
+      "context": "div",
+      "note": "Normal and italic only; no oblique matching.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.font-variant",
+      "kind": "property",
+      "name": "font-variant",
+      "section": "5.2.4",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#font-variant",
+      "status": "unsupported",
+      "sample": "small-caps",
+      "context": "div",
+      "note": "Small capitals are not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.font-weight",
+      "kind": "property",
+      "name": "font-weight",
+      "section": "5.2.5",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#font-weight",
+      "status": "partial",
+      "sample": "bold",
+      "context": "div",
+      "note": "Four supplied style variants; no relative weight matching or full 100–900 family repertoire.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.font-size",
+      "kind": "property",
+      "name": "font-size",
+      "section": "5.2.6",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#font-size",
+      "status": "partial",
+      "sample": "18pt",
+      "context": "div",
+      "note": "Positive supported lengths and percentages; keyword size matching is absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.font",
+      "kind": "property",
+      "name": "font",
+      "section": "5.2.7",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#font",
+      "status": "unsupported",
+      "sample": "italic 12pt serif",
+      "context": "div",
+      "note": "The font shorthand is not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.color",
+      "kind": "property",
+      "name": "color",
+      "section": "5.3.1",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#color",
+      "status": "partial",
+      "sample": "#176a80",
+      "context": "div",
+      "note": "Hex, selected names and positive rgb(); complete CSS1 value/error handling remains unqualified.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.background-color",
+      "kind": "property",
+      "name": "background-color",
+      "section": "5.3.2",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#background-color",
+      "status": "partial",
+      "sample": "#e7eff4",
+      "context": "div",
+      "note": "Solid/transparent box backgrounds; canvas propagation remains unqualified.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.background-image",
+      "kind": "property",
+      "name": "background-image",
+      "section": "5.3.3",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#background-image",
+      "status": "unsupported",
+      "sample": "url(tile.png)",
+      "context": "div",
+      "note": "Background images are not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.background-repeat",
+      "kind": "property",
+      "name": "background-repeat",
+      "section": "5.3.4",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#background-repeat",
+      "status": "unsupported",
+      "sample": "repeat",
+      "context": "div",
+      "note": "Background tiling is not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.background-attachment",
+      "kind": "property",
+      "name": "background-attachment",
+      "section": "5.3.5",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#background-attachment",
+      "status": "unsupported",
+      "sample": "fixed",
+      "context": "div",
+      "note": "Background attachment is not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.background-position",
+      "kind": "property",
+      "name": "background-position",
+      "section": "5.3.6",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#background-position",
+      "status": "unsupported",
+      "sample": "center",
+      "context": "div",
+      "note": "Background positioning is not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.background",
+      "kind": "property",
+      "name": "background",
+      "section": "5.3.7",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#background",
+      "status": "partial",
+      "sample": "#ffffff",
+      "context": "div",
+      "note": "Color-only alias; reset of all shorthand components is not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.word-spacing",
+      "kind": "property",
+      "name": "word-spacing",
+      "section": "5.4.1",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#word-spacing",
+      "status": "unsupported",
+      "sample": "2pt",
+      "context": "div",
+      "note": "Inter-word spacing is not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.letter-spacing",
+      "kind": "property",
+      "name": "letter-spacing",
+      "section": "5.4.2",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#letter-spacing",
+      "status": "unsupported",
+      "sample": "1pt",
+      "context": "div",
+      "note": "Inter-character spacing is not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.text-decoration",
+      "kind": "property",
+      "name": "text-decoration",
+      "section": "5.4.3",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#text-decoration",
+      "status": "partial",
+      "sample": "underline",
+      "context": "div",
+      "note": "Underline/none only; no overline or line-through.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.vertical-align",
+      "kind": "property",
+      "name": "vertical-align",
+      "section": "5.4.4",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#vertical-align",
+      "status": "partial",
+      "sample": "top",
+      "context": "td",
+      "note": "Table-cell extension only; CSS1 inline alignment is absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.text-transform",
+      "kind": "property",
+      "name": "text-transform",
+      "section": "5.4.5",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#text-transform",
+      "status": "unsupported",
+      "sample": "uppercase",
+      "context": "div",
+      "note": "Case transformation is not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.text-align",
+      "kind": "property",
+      "name": "text-align",
+      "section": "5.4.6",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#text-align",
+      "status": "partial",
+      "sample": "center",
+      "context": "div",
+      "note": "Left, center and right; justification absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.text-indent",
+      "kind": "property",
+      "name": "text-indent",
+      "section": "5.4.7",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#text-indent",
+      "status": "unsupported",
+      "sample": "12pt",
+      "context": "div",
+      "note": "First-line indentation is not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.line-height",
+      "kind": "property",
+      "name": "line-height",
+      "section": "5.4.8",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#line-height",
+      "status": "partial",
+      "sample": "1.5",
+      "context": "div",
+      "note": "Numbers, supported lengths and percentages; full inline line-box rules remain unqualified.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.margin-top",
+      "kind": "property",
+      "name": "margin-top",
+      "section": "5.5.1",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#margin-top",
+      "status": "partial",
+      "sample": "6pt",
+      "context": "div",
+      "note": "Positive lengths and positive collapse; negative, percentage and auto margins absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.margin-right",
+      "kind": "property",
+      "name": "margin-right",
+      "section": "5.5.2",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#margin-right",
+      "status": "partial",
+      "sample": "6pt",
+      "context": "div",
+      "note": "Positive lengths and positive collapse; negative, percentage and auto margins absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.margin-bottom",
+      "kind": "property",
+      "name": "margin-bottom",
+      "section": "5.5.3",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#margin-bottom",
+      "status": "partial",
+      "sample": "6pt",
+      "context": "div",
+      "note": "Positive lengths and positive collapse; negative, percentage and auto margins absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.margin-left",
+      "kind": "property",
+      "name": "margin-left",
+      "section": "5.5.4",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#margin-left",
+      "status": "partial",
+      "sample": "6pt",
+      "context": "div",
+      "note": "Positive lengths and positive collapse; negative, percentage and auto margins absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.margin",
+      "kind": "property",
+      "name": "margin",
+      "section": "5.5.5",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#margin",
+      "status": "partial",
+      "sample": "6pt",
+      "context": "div",
+      "note": "Positive lengths and positive collapse; negative, percentage and auto margins absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.padding-top",
+      "kind": "property",
+      "name": "padding-top",
+      "section": "5.5.6",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#padding-top",
+      "status": "partial",
+      "sample": "6pt",
+      "context": "div",
+      "note": "Positive lengths; percentage padding absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.padding-right",
+      "kind": "property",
+      "name": "padding-right",
+      "section": "5.5.7",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#padding-right",
+      "status": "partial",
+      "sample": "6pt",
+      "context": "div",
+      "note": "Positive lengths; percentage padding absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.padding-bottom",
+      "kind": "property",
+      "name": "padding-bottom",
+      "section": "5.5.8",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#padding-bottom",
+      "status": "partial",
+      "sample": "6pt",
+      "context": "div",
+      "note": "Positive lengths; percentage padding absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.padding-left",
+      "kind": "property",
+      "name": "padding-left",
+      "section": "5.5.9",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#padding-left",
+      "status": "partial",
+      "sample": "6pt",
+      "context": "div",
+      "note": "Positive lengths; percentage padding absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.padding",
+      "kind": "property",
+      "name": "padding",
+      "section": "5.5.10",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#padding",
+      "status": "partial",
+      "sample": "6pt",
+      "context": "div",
+      "note": "Positive lengths; percentage padding absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border-top-width",
+      "kind": "property",
+      "name": "border-top-width",
+      "section": "5.5.11",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-top-width",
+      "status": "unsupported",
+      "sample": "1pt",
+      "context": "div",
+      "note": "Independent border-side widths are not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border-right-width",
+      "kind": "property",
+      "name": "border-right-width",
+      "section": "5.5.12",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-right-width",
+      "status": "unsupported",
+      "sample": "1pt",
+      "context": "div",
+      "note": "Independent border-side widths are not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border-bottom-width",
+      "kind": "property",
+      "name": "border-bottom-width",
+      "section": "5.5.13",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-bottom-width",
+      "status": "unsupported",
+      "sample": "1pt",
+      "context": "div",
+      "note": "Independent border-side widths are not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border-left-width",
+      "kind": "property",
+      "name": "border-left-width",
+      "section": "5.5.14",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-left-width",
+      "status": "unsupported",
+      "sample": "1pt",
+      "context": "div",
+      "note": "Independent border-side widths are not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border-width",
+      "kind": "property",
+      "name": "border-width",
+      "section": "5.5.15",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-width",
+      "status": "partial",
+      "sample": "1pt",
+      "context": "div",
+      "note": "Uniform numeric width only; side tuples and keyword widths absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border-color",
+      "kind": "property",
+      "name": "border-color",
+      "section": "5.5.16",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-color",
+      "status": "partial",
+      "sample": "#176a80",
+      "context": "div",
+      "note": "Uniform color only; individual sides absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border-style",
+      "kind": "property",
+      "name": "border-style",
+      "section": "5.5.17",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-style",
+      "status": "partial",
+      "sample": "solid",
+      "context": "div",
+      "note": "Solid and none only; other border styles absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border-top",
+      "kind": "property",
+      "name": "border-top",
+      "section": "5.5.18",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-top",
+      "status": "unsupported",
+      "sample": "1pt solid black",
+      "context": "div",
+      "note": "Independent border-side shorthands are not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border-right",
+      "kind": "property",
+      "name": "border-right",
+      "section": "5.5.19",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-right",
+      "status": "unsupported",
+      "sample": "1pt solid black",
+      "context": "div",
+      "note": "Independent border-side shorthands are not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border-bottom",
+      "kind": "property",
+      "name": "border-bottom",
+      "section": "5.5.20",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-bottom",
+      "status": "unsupported",
+      "sample": "1pt solid black",
+      "context": "div",
+      "note": "Independent border-side shorthands are not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border-left",
+      "kind": "property",
+      "name": "border-left",
+      "section": "5.5.21",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-left",
+      "status": "unsupported",
+      "sample": "1pt solid black",
+      "context": "div",
+      "note": "Independent border-side shorthands are not implemented.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.border",
+      "kind": "property",
+      "name": "border",
+      "section": "5.5.22",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border",
+      "status": "partial",
+      "sample": "1pt solid black",
+      "context": "div",
+      "note": "Uniform width/style/color tuple only; general shorthand grammar absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.width",
+      "kind": "property",
+      "name": "width",
+      "section": "5.5.23",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#width",
+      "status": "partial",
+      "sample": "30pt",
+      "context": "div",
+      "note": "Content widths and percentages; full intrinsic/replaced sizing remains unqualified.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.height",
+      "kind": "property",
+      "name": "height",
+      "section": "5.5.24",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#height",
+      "status": "partial",
+      "sample": "30pt",
+      "context": "div",
+      "note": "Explicit non-percentage heights; overflow is rejected.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.float",
+      "kind": "property",
+      "name": "float",
+      "section": "5.5.25",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#float",
+      "status": "unsupported",
+      "sample": "left",
+      "context": "div",
+      "note": "Float placement and exclusion areas are absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.clear",
+      "kind": "property",
+      "name": "clear",
+      "section": "5.5.26",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#clear",
+      "status": "unsupported",
+      "sample": "both",
+      "context": "div",
+      "note": "Float clearance is absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.display",
+      "kind": "property",
+      "name": "display",
+      "section": "5.6.1",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#display",
+      "status": "partial",
+      "sample": "block",
+      "context": "div",
+      "note": "Native block/inline/list elements; arbitrary display remapping remains unqualified.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.white-space",
+      "kind": "property",
+      "name": "white-space",
+      "section": "5.6.2",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#white-space",
+      "status": "partial",
+      "sample": "pre",
+      "context": "div",
+      "note": "Whitespace modes exist; complete CSS1 line-breaking behavior remains unqualified.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.list-style-type",
+      "kind": "property",
+      "name": "list-style-type",
+      "section": "5.6.3",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#list-style-type",
+      "status": "partial",
+      "sample": "decimal",
+      "context": "div",
+      "note": "Disc/circle/square/decimal/none; Roman and alphabetic numbering absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.list-style-image",
+      "kind": "property",
+      "name": "list-style-image",
+      "section": "5.6.4",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#list-style-image",
+      "status": "unsupported",
+      "sample": "url(marker.png)",
+      "context": "div",
+      "note": "Image list markers are absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.list-style-position",
+      "kind": "property",
+      "name": "list-style-position",
+      "section": "5.6.5",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#list-style-position",
+      "status": "unsupported",
+      "sample": "inside",
+      "context": "div",
+      "note": "Only the native outside marker model exists.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.property.list-style",
+      "kind": "property",
+      "name": "list-style",
+      "section": "5.6.6",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#list-style",
+      "status": "unsupported",
+      "sample": "disc outside",
+      "context": "div",
+      "note": "List shorthand is absent.",
+      "tests": [
+        "tests/Css/Css1RegistryTest.php"
+      ]
+    },
+    {
+      "id": "css1.behavior.selectors",
+      "kind": "behavior",
+      "name": "selectors",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
+      "status": "partial",
+      "note": "Basic selectors work; escaped identifiers and CSS1 anchor pseudo-classes/typographical pseudo-elements remain absent.",
+      "tests": [
+        "tests/Css/CascadeTest.php"
+      ]
+    },
+    {
+      "id": "css1.behavior.cascade",
+      "kind": "behavior",
+      "name": "cascade",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
+      "status": "partial",
+      "note": "Author cascade works; user-origin styles, imports and historical CSS1-versus-modern precedence are not fully qualified.",
+      "tests": [
+        "tests/Css/CascadeTest.php"
+      ]
+    },
+    {
+      "id": "css1.behavior.inheritance",
+      "kind": "behavior",
+      "name": "inheritance",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
+      "status": "partial",
+      "note": "Supported inherited fields are tested; absent properties prevent full inheritance coverage.",
+      "tests": [
+        "tests/Css/CascadeTest.php"
+      ]
+    },
+    {
+      "id": "css1.behavior.formatting",
+      "kind": "behavior",
+      "name": "formatting",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
+      "status": "partial",
+      "note": "Positive block margins and native line boxes exist; float, negative margins and inline edge cases prevent full qualification.",
+      "tests": [
+        "tests/Layout/LayoutEngineTest.php"
+      ]
+    },
+    {
+      "id": "css1.behavior.font-matching",
+      "kind": "behavior",
+      "name": "font-matching",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
+      "status": "unsupported",
+      "note": "Explicit variants are an API capability, not CSS1 font-family matching.",
+      "tests": [
+        "tests/Font/FontFaceTest.php"
+      ]
+    },
+    {
+      "id": "css1.behavior.units",
+      "kind": "behavior",
+      "name": "units",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
+      "status": "partial",
+      "note": "Absolute lengths, em and selected percentages; ex and full percentage contexts are absent.",
+      "tests": [
+        "tests/Css/CascadeTest.php"
+      ]
+    },
+    {
+      "id": "css1.behavior.syntax-recovery",
+      "kind": "behavior",
+      "name": "syntax-recovery",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
+      "status": "partial",
+      "note": "Explicit strict/report diagnostics; complete forward-compatible browser recovery is not implemented.",
+      "tests": [
+        "tests/Parsing/HtmlCompilerTest.php"
+      ]
+    },
+    {
+      "id": "css1.behavior.imports",
+      "kind": "behavior",
+      "name": "imports",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
+      "status": "unsupported",
+      "note": "Linked catalog styles work, but recursive ordered @import does not.",
+      "tests": [
+        "tests/Css/CascadeTest.php"
+      ]
+    },
+    {
+      "id": "css1.behavior.canvas",
+      "kind": "behavior",
+      "name": "canvas",
+      "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
+      "status": "partial",
+      "note": "Box backgrounds exist; root/body canvas background propagation is not yet qualified.",
+      "tests": [
+        "tests/Layout/LayoutEngineTest.php"
+      ]
+    }
+  ]
+}
