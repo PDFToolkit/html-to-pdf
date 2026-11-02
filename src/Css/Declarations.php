@@ -38,6 +38,9 @@ final readonly class Declarations
     /** @return array<string,string> */
     private function expandSupported(string $property, string $value): array
     {
+        if ($property === 'font') {
+            return (new FontDeclarations())->expand($value);
+        }
         $border = $this->borders->expand($property, $value);
         if ($border !== null) {
             return $border;
@@ -65,7 +68,7 @@ final readonly class Declarations
         if ($property === 'page-break-inside') {
             $property = 'break-inside';
         }
-        $supported = ['display', 'font-size', 'line-height', 'font-weight', 'font-style', 'color', 'background-color', 'text-align', 'white-space', 'text-decoration', 'text-decoration-line', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'width', 'height', 'break-before', 'break-after', 'break-inside', 'orphans', 'widows', 'list-style-type', 'vertical-align', 'table-layout'];
+        $supported = ['font-family', 'font-variant', 'float', 'clear', 'display', 'font-size', 'line-height', 'font-weight', 'font-style', 'color', 'background-color', 'text-align', 'white-space', 'text-decoration', 'text-decoration-line', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'width', 'height', 'break-before', 'break-after', 'break-inside', 'orphans', 'widows', 'list-style-type', 'vertical-align', 'table-layout'];
         if (!in_array($property, $supported, true)) {
             $this->diagnostics->unsupported('css.property', 'Unsupported CSS declaration: ' . $property . ': ' . $value);
             return [];

@@ -32,6 +32,9 @@ final readonly class SpecifiedDeclarationValidator
             return;
         }
         switch ($property) {
+            case 'font-family':
+                (new FontFamilyParser())->parse($value);
+                return;
             case 'font-size':
                 $this->length($value, true, true);
                 return;
@@ -72,6 +75,9 @@ final readonly class SpecifiedDeclarationValidator
                 return;
         }
         $allowed = match ($property) {
+            'font-variant' => ['normal'],
+            'float' => ['none', 'left', 'right'],
+            'clear' => ['none', 'left', 'right', 'both'],
             'display' => ['none', 'block', 'inline', 'list-item', 'table', 'table-row-group', 'table-header-group', 'table-footer-group', 'table-row', 'table-cell', 'table-caption'],
             'font-style' => ['normal', 'italic'],
             'text-align' => ['left', 'center', 'right'],

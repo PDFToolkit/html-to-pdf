@@ -101,7 +101,7 @@ final class CascadeTest extends CompilerTestCase
         yield 'page' => ['@page{size:A4}'];
         yield 'font face' => ['@font-face{font-family:x;src:url(file:///x.ttf)}'];
         yield 'positioning' => ['p{position:absolute}'];
-        yield 'font family' => ['p{font-family:serif}'];
+        yield 'malformed font family' => ['p{font-family:serif,,sans-serif}'];
         yield 'flex' => ['p{display:flex}'];
         yield 'negative padding' => ['p{padding:-1pt}'];
         yield 'negative margin' => ['p{margin:-1pt}'];

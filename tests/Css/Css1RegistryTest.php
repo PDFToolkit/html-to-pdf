@@ -67,10 +67,17 @@ final class Css1RegistryTest extends CompilerTestCase
     public function testReportPolicyKeepsUnsupportedPropertyDiagnosisVisible(): void
     {
         $diagnostics = new Diagnostics(UnsupportedPolicy::Report);
-        $document = $this->compile('<div id="subject">Witness</div>', '#subject{float:left;color:#176a80}', $this->options(policy: UnsupportedPolicy::Report), $diagnostics);
+        $document = $this->compile('<div id="subject">Witness</div>', '#subject{position:absolute;color:#176a80}', $this->options(policy: UnsupportedPolicy::Report), $diagnostics);
         self::assertNotEmpty($diagnostics->all());
         self::assertSame('css.property', $diagnostics->all()[0]->code);
         self::assertEquals(new Color(23 / 255, 106 / 255, 128 / 255), $this->find($document->root, 'subject')->style->color);
+    }
+
+    private function assertFontWitness(ComputedStyle $style): void
+    {
+        self::assertSame(12.0, $style->fontSize);
+        self::assertTrue($style->italic);
+        self::assertSame('serif', $style->fontFamily->css());
     }
 
     private function assertComputedWitness(string $property, ComputedStyle $style): void
@@ -90,6 +97,10 @@ final class Css1RegistryTest extends CompilerTestCase
             return;
         }
         match ($property) {
+            'font-family' => self::assertSame('serif', $style->fontFamily->css()),
+            'font' => $this->assertFontWitness($style),
+            'float' => self::assertSame('left', $style->float),
+            'clear' => self::assertSame('both', $style->clear),
             'font-style' => self::assertTrue($style->italic),
             'font-weight' => self::assertSame(700, $style->fontWeight),
             'font-size' => self::assertSame(18.0, $style->fontSize),

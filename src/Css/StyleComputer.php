@@ -10,6 +10,7 @@ use PDF\HtmlToPdf\Style\Color;
 use PDF\HtmlToPdf\Style\ComputedStyle;
 use PDF\HtmlToPdf\Style\Edges;
 use PDF\HtmlToPdf\Style\Length;
+use PDF\HtmlToPdf\Style\FontFamilyList;
 
 final readonly class StyleComputer
 {
@@ -28,7 +29,7 @@ final readonly class StyleComputer
         $author = $this->expandLegacyBorders($author);
         $initial = array_replace($this->serialize(new ComputedStyle()), $this->borderComputer->defaults());
         $inherited = $this->serialize($parent->style);
-        $inheritedNames = ['font-size', 'line-height', 'font-weight', 'font-style', 'color', 'text-align', 'white-space', 'orphans', 'widows', 'list-style-type'];
+        $inheritedNames = ['font-family', 'font-variant', 'font-size', 'line-height', 'font-weight', 'font-style', 'color', 'text-align', 'white-space', 'orphans', 'widows', 'list-style-type'];
         $css = array_replace($initial, array_intersect_key($inherited, array_flip($inheritedNames)), $this->defaults($tag));
         foreach ($author as $property => $value) {
             $keyword = strtolower(trim($value));
@@ -39,6 +40,9 @@ final readonly class StyleComputer
                 default => $value,
             };
         }
+        $fontFamily = $css['font-family'] === '' ? new FontFamilyList() : $this->value('font-family', fn(): FontFamilyList => (new FontFamilyParser())->parse($css['font-family']), $parent->style->fontFamily);
+        $float = $this->value('float', fn(): string => $this->values->keyword($css['float'], ['none', 'left', 'right']), 'none');
+        $clear = $this->value('clear', fn(): string => $this->values->keyword($css['clear'], ['none', 'left', 'right', 'both']), 'none');
         $fontSize = $parent->style->fontSize;
         $fontSize = $this->value('font-size', function () use ($css, $parent, $rootSize): float {
             $length = $this->values->length($css['font-size'], $parent->style->fontSize, $rootSize, true);
@@ -80,6 +84,10 @@ final readonly class StyleComputer
         $color = $this->value('color', fn(): Color => $this->values->color($css['color'], $parent->style->color) ?? throw new \InvalidArgumentException('Transparent text is not supported.'), $parent->style->color);
         $background = $this->value('background-color', fn(): ?Color => $this->values->color($css['background-color'], $color), null);
         $display = $this->value('display', fn(): string => $this->values->keyword($css['display'], ['none', 'block', 'inline', 'list-item', 'table', 'table-row-group', 'table-header-group', 'table-footer-group', 'table-row', 'table-cell', 'table-caption']), $this->defaults($tag)['display'] ?? 'inline');
+        if ($float !== 'none' && $display === 'inline') {
+            $display = 'block';
+        }
+        $this->value('font-variant', fn(): string => $this->values->keyword($css['font-variant'], ['normal']), 'normal');
         $fontWeight = $this->value('font-weight', function () use ($css): int {
             $value = strtolower($css['font-weight']);
             if ($value === 'normal') {
@@ -118,7 +126,7 @@ final readonly class StyleComputer
             $vertical = 'top';
         }
         $tableLayout = $this->value('table-layout', fn(): string => $this->values->keyword($css['table-layout'], ['auto', 'fixed']), 'auto');
-        return new StyleState(new ComputedStyle($display, $fontSize, $lineHeight, $fontWeight, $italic, $color, $background, $align, $whiteSpace, $underline, $margin, $padding, $borderWidth, $borderColor, $width, $height, $before, $after, $avoid, $orphans, $widows, $listStyle, $vertical, $tableLayout, $borders), $lineFactor);
+        return new StyleState(new ComputedStyle($display, $fontSize, $lineHeight, $fontWeight, $italic, $color, $background, $align, $whiteSpace, $underline, $margin, $padding, $borderWidth, $borderColor, $width, $height, $before, $after, $avoid, $orphans, $widows, $listStyle, $vertical, $tableLayout, $borders, $float, $clear, $fontFamily), $lineFactor);
     }
 
     /** Preserve the uniform border input accepted by the 0.1 computed-style API.
@@ -184,7 +192,7 @@ final readonly class StyleComputer
     private function defaults(string $tag): array
     {
         $display = match ($tag) {
-            'html', 'body', 'div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'address', 'p', 'pre', 'blockquote', 'ul', 'ol', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr' => 'block',
+            'html', 'body', 'dl', 'dt', 'dd', 'form', 'div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'address', 'p', 'pre', 'blockquote', 'ul', 'ol', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr' => 'block',
             'li' => 'list-item', 'table' => 'table', 'thead' => 'table-header-group', 'tbody' => 'table-row-group', 'tfoot' => 'table-footer-group', 'tr' => 'table-row', 'td', 'th' => 'table-cell', 'caption' => 'table-caption',
             'head', 'style', 'link', 'meta', 'title', 'script', 'template' => 'none', default => 'inline',
         };
@@ -235,7 +243,7 @@ final readonly class StyleComputer
     {
         $color = (new ColorFormatter())->format(...);
         $dimension = static fn(?Length $length): string => $length === null ? 'auto' : $length->value . ($length->percentage ? '%' : 'pt');
-        $values = ['display' => $s->display, 'font-size' => $s->fontSize . 'pt', 'line-height' => $s->lineHeight . 'pt', 'font-weight' => (string) $s->fontWeight, 'font-style' => $s->italic ? 'italic' : 'normal', 'color' => $color($s->color), 'background-color' => $s->background === null ? 'transparent' : $color($s->background), 'text-align' => $s->textAlign, 'white-space' => $s->whiteSpace, 'text-decoration' => $s->underline ? 'underline' : 'none', 'width' => $dimension($s->width), 'height' => $dimension($s->height), 'break-before' => $s->breakBefore, 'break-after' => $s->breakAfter, 'break-inside' => $s->breakInsideAvoid ? 'avoid' : 'auto', 'orphans' => (string) $s->orphans, 'widows' => (string) $s->widows, 'list-style-type' => $s->listStyleType, 'vertical-align' => $s->verticalAlign, 'table-layout' => $s->tableLayout];
+        $values = ['font-family' => $s->fontFamily->css(), 'font-variant' => 'normal', 'float' => $s->float, 'clear' => $s->clear, 'display' => $s->display, 'font-size' => $s->fontSize . 'pt', 'line-height' => $s->lineHeight . 'pt', 'font-weight' => (string) $s->fontWeight, 'font-style' => $s->italic ? 'italic' : 'normal', 'color' => $color($s->color), 'background-color' => $s->background === null ? 'transparent' : $color($s->background), 'text-align' => $s->textAlign, 'white-space' => $s->whiteSpace, 'text-decoration' => $s->underline ? 'underline' : 'none', 'width' => $dimension($s->width), 'height' => $dimension($s->height), 'break-before' => $s->breakBefore, 'break-after' => $s->breakAfter, 'break-inside' => $s->breakInsideAvoid ? 'avoid' : 'auto', 'orphans' => (string) $s->orphans, 'widows' => (string) $s->widows, 'list-style-type' => $s->listStyleType, 'vertical-align' => $s->verticalAlign, 'table-layout' => $s->tableLayout];
         foreach (['margin', 'padding'] as $name) {
             foreach (['top', 'right', 'bottom', 'left'] as $side) {
                 $values[$name . '-' . $side] = $s->$name->$side . 'pt';
