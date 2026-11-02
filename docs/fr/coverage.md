@@ -1,0 +1,35 @@
+# Couverture du profil d’entrée natif
+
+[English](../coverage.md) · [Français](coverage.md)
+
+La version 0.1 constitue un premier moteur natif de pagination. **Elle ne couvre
+pas encore intégralement CSS1, CSS2 ni un module CSS moderne complet.** Le travail
+suit la [progression par niveaux](css-levels.md). Les capacités de niveaux
+ultérieurs déjà présentes restent des extensions explicites ; elles ne comblent
+pas les exigences CSS1 absentes.
+
+| Domaine | Profil implémenté | Limites restantes |
+|---|---|---|
+| HTML | Parseur HTML5 UTF-8 explicite, arbre réparé, titre/langue, titres, paragraphes, conteneurs, emphase, listes, images, tableaux et liens textuels. | Pas de JavaScript, formulaires, SVG, MathML, médias, remappage ARIA ou mise en page arbitraire d’éléments personnalisés. |
+| Cascade | Feuilles auteur, style/link catalogués, styles inline, spécificité, ordre, `!important`, héritage, `initial/inherit/unset`. | Pas de feuille utilisateur, `@import`, couches, scope ou propriétés personnalisées. La validation stricte diffère de la récupération d’erreurs des navigateurs. |
+| Sélecteurs | Type/classe/ID, groupes, descendants/enfants/frères et sélecteurs structurels pris en charge par Symfony. | Sélecteurs échappés, pseudo-éléments et états interactifs/de liens refusés ; pas de couverture complète de Selectors. |
+| Média | Sélection print/all simple, exclusion des règles screen. | Pas de caractéristiques média ni `@page` ; page configurée par objet explicite. |
+| Polices | Vraies variantes regular/bold/italic/bold-italic TrueType statiques, programmes incorporés, ligatures GSUB et positionnement GPOS, Unicode sélectionnable. | Pas de sélection CSS font-family, raccourci font, fontes variables, WOFF, CFF, chaînes de remplacement, bidi ou scripts complexes. |
+| Texte | Normal/nowrap/pre/pre-wrap, sauts explicites, alignement gauche/centre/droite, soulignement, mesure après shaping, espaces insécables. | Pas de justification, découpage automatique des mots, césure, espacements, transformation/retrait, first-letter/first-line ou vertical-align inline. |
+| Couleurs | RGB, hexadécimal 3/6 chiffres, noms pris en charge, currentColor, fond transparent. | Pas d’alpha arbitraire, dégradés, images de fond, couleurs CSS ICC ou toutes les fonctions modernes. |
+| Boîtes | Longueurs positives, largeurs en pourcentage, flux bloc/inline, fusion des marges positives entre frères/parents/blocs vides, padding, bordures uniformes pleines, fonds, hauteurs explicites avec refus du débordement. | Pas de marges négatives/auto/pourcentage, padding/hauteurs en pourcentage, côtés/styles de bordure distincts, flottants, positionnement, flex ou grid. |
+| Tableaux | Colonnes fixes explicites, lignes rectangulaires, padding/fond de cellule, alignement haut/milieu/bas, scope TH, en-têtes répétés comme artefacts, pagination entre lignes. | Pas de largeur intrinsèque auto, cellules fusionnées, bordures fusionnées, tfoot, groupes de lignes décorés, légende en bas ou découpage d’une ligne trop haute. |
+| Listes | Début/valeur des listes ordonnées, marqueurs disc/circle/square/decimal/none, listes imbriquées avec L/LI/Lbl/LBody. | Pas de numérotation romaine/alphabétique, images de marqueur, position inside ou raccourci list-style. |
+| Pagination | Page uniforme, sauts forcés et anciens alias, veuves/orphelines, maintien des groupes tenant sur une page. | Groupe avoid trop grand fragmenté avec diagnostic ; ligne/image/ligne de tableau indivisible trop grande refusée. Pas d’en-têtes courants, compteurs ou pages nommées. |
+| Images | PNG/JPEG explicites ; proportions intrinsèques ou dimensions imposées, transparence PNG, alternative textuelle/artefact décoratif. | Pas de téléchargement implicite ni prise en charge automatique de formats arbitraires. |
+| PDF | PDF 1.7, polices incorporées, métadonnées/langue, arbre de structure, MCR par page, annotations URI avec OBJR, artefacts. | Aucune conformité PDF/A ou PDF/UA annoncée ; pas de champs, signatures ou destinations internes dans ce module. |
+
+La géométrie utilise des boîtes de contenu. Les styles par défaut appartiennent
+au module et ne promettent pas l’équivalence des styles navigateur. Pour des
+modèles reproductibles, préciser tailles, interlignes, marges et tableau fixe.
+
+Les tests couvrent analyse/cascade, mise en page, shaping, écriture et conversion
+complète. L’oracle des exemples utilise qpdf, pypdf et Poppler indépendamment.
+Les témoins Chromium/Firefox comparent certains styles calculés, sans prétendre
+à l’équivalence de toutes les pages imprimées. Les artefacts de release donnent
+versions et résultats ; des témoins réussis ne qualifient pas un niveau entier.
