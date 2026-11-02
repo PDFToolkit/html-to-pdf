@@ -197,6 +197,22 @@ final class LayoutEngineTest extends TestCase
         self::assertSame(['Document', 'L', 'LI', 'Lbl', 'LBody', 'Span', 'LI', 'Lbl', 'LBody', 'Span'], array_column($result->semantics, 'role'));
     }
 
+    public function testDiscStyleOverridesTheOrderedListDefaultMarker(): void
+    {
+        $style = $this->style(display: 'list-item', listStyleType: 'disc');
+        $list = new Node('list', 'ol', children: [new Node('item', 'li', children: [$this->text('First', $style)], style: $style)], style: $this->style());
+        self::assertSame(['•', 'First'], array_column($this->texts($this->layout([$list])), 'text'));
+    }
+
+    public function testAnExhaustedListCounterCannotBecomeScientificNotation(): void
+    {
+        $style = $this->style(display: 'list-item', listStyleType: 'decimal');
+        $list = new Node('list', 'ol', ['start' => (string) PHP_INT_MAX], [new Node('first', 'li', children: [$this->text('First', $style)], style: $style), new Node('second', 'li', children: [$this->text('Second', $style)], style: $style)], style: $this->style());
+        $this->expectException(UnsupportedFeature::class);
+        $this->expectExceptionMessage('List counter');
+        $this->layout([$list]);
+    }
+
     public function testTableHeaderRepeatsAsArtifactAndRowsStayWhole(): void
     {
         $result = $this->layout([$this->table(7)], $this->options(height: 100));

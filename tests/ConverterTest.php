@@ -171,6 +171,20 @@ final class ConverterTest extends TestCase
         (new Converter())->convert($this->source('<a href="javascript:alert(1)" style="display:block"><p>Visit</p></a>'), new ConversionOptions($this->fonts()));
     }
 
+    public function testChangingAListItemIntoABlockIsExplicitlyRejected(): void
+    {
+        $this->expectException(UnsupportedFeature::class);
+        $this->expectExceptionMessage('Changing table or list display roles');
+        (new Converter())->convert($this->source('<ul><li style="display:block">First</li></ul>'), new ConversionOptions($this->fonts()));
+    }
+
+    public function testHiddenListItemsRemainSupported(): void
+    {
+        $result = (new Converter())->convert($this->source('<ul><li style="display:none">Hidden</li><li>Visible</li></ul>'), new ConversionOptions($this->fonts()));
+        self::assertSame([], $result->diagnostics);
+        self::assertSame(1, $result->pageCount);
+    }
+
     public function testUnsafeBlockLinkTargetIsRemovedWithADiagnosticInReportMode(): void
     {
         $result = (new Converter())->convert(

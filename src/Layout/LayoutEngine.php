@@ -42,7 +42,8 @@ final readonly class LayoutEngine
                 $tableDisplays = ['table' => 'table', 'tr' => 'table-row', 'td' => 'table-cell', 'th' => 'table-cell', 'thead' => 'table-header-group', 'tbody' => 'table-row-group', 'tfoot' => 'table-footer-group', 'caption' => 'table-caption'];
                 if ((isset($tableDisplays[$node->tag]) && $s->display !== $tableDisplays[$node->tag])
                     || (in_array($s->display, array_values($tableDisplays), true) && ($tableDisplays[$node->tag] ?? null) !== $s->display)
-                    || ($s->display === 'list-item' && $node->tag !== 'li')) {
+                    || ($s->display === 'list-item' && $node->tag !== 'li')
+                    || ($node->tag === 'li' && $s->display !== 'list-item')) {
                     throw new UnsupportedFeature('Changing table or list display roles is outside this layout profile.');
                 }
             }

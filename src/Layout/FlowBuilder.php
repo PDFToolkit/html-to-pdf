@@ -183,7 +183,7 @@ final class FlowBuilder
         }
         $flow = [];
         $inlineNodes = [];
-        $listIndex = (int) ($node->attribute('start') ?? '1');
+        $listCounter = null;
         foreach ($node->children as $child) {
             if ($child->style->display === 'none') {
                 continue;
@@ -197,17 +197,15 @@ final class FlowBuilder
             $inlineNodes = [];
             $marker = null;
             if ($child->tag === 'li') {
-                if ($child->attribute('value') !== null) {
-                    $listIndex = (int) $child->attribute('value');
-                }
+                $listCounter ??= new ListCounter($node->attribute('start'));
+                $listIndex = $listCounter->next($child->attribute('value'));
                 $marker = match ($child->style->listStyleType) {
                     'none' => null,
                     'decimal' => $listIndex . '.',
                     'circle' => '○',
                     'square' => '▪',
-                    default => $node->tag === 'ol' ? $listIndex . '.' : '•',
+                    default => '•',
                 };
-                ++$listIndex;
             }
             $childFlow = $this->build($child, $x, $width, $semantic, marker: $marker, uri: $uri);
             array_push($flow, ...$childFlow);
