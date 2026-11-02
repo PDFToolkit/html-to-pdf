@@ -11,6 +11,7 @@ use PDF\Document\Structure\StructureAttributes;
 use PDF\Document\Structure\StructureElement;
 use PDF\Document\Structure\StructureTreeRoot;
 use PDF\HtmlToPdf\ConversionLimits;
+use PDF\HtmlToPdf\Drawing\BorderBox;
 use PDF\HtmlToPdf\Drawing\Image;
 use PDF\HtmlToPdf\Drawing\Rectangle;
 use PDF\HtmlToPdf\Drawing\Text;
@@ -95,13 +96,13 @@ final class SemanticTree
             foreach ($page->commands as $command) {
                 if ($command instanceof Text) {
                     $bounds = (new TextBounds())->calculate($command, $fonts->run($command), $page->height);
-                } elseif ($command instanceof Rectangle || $command instanceof Image) {
+                } elseif ($command instanceof Rectangle || $command instanceof Image || $command instanceof BorderBox) {
                     $bounds = new Bounds($command->x, $page->height - $command->y - $command->height, $command->x + $command->width, $page->height - $command->y);
                 } else {
                     throw new ConversionException('Unsupported drawing command.');
                 }
                 if ($command->semanticId !== null) {
-                    if (!$command instanceof Rectangle && isset($containers[$command->semanticId])) {
+                    if (!$command instanceof Rectangle && !$command instanceof BorderBox && isset($containers[$command->semanticId])) {
                         throw new ConversionException('Paint semantic content in leaf nodes so its order cannot conflict with structural children.');
                     }
                     $this->recordBounds($command->semanticId, $pageIndex, $bounds);

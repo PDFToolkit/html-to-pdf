@@ -14,6 +14,7 @@ use PDF\Document\Structure\StructureLimits;
 use PDF\Document\Structure\StructureTreeRoot;
 use PDF\FileStructure;
 use PDF\HtmlToPdf\ConversionLimits;
+use PDF\HtmlToPdf\Drawing\BorderBox;
 use PDF\HtmlToPdf\Drawing\Image;
 use PDF\HtmlToPdf\Drawing\Rectangle;
 use PDF\HtmlToPdf\Drawing\Text;
@@ -81,6 +82,7 @@ final readonly class Renderer
     {
         $pages = $this->orderedPages($document->pages);
         $count = 0;
+        $borderWork = 0.0;
         foreach ($pages as $page) {
             if (!is_finite($page->width) || !is_finite($page->height)
                 || min($page->width, $page->height) <= 0 || max($page->width, $page->height) > 14_400) {
@@ -91,11 +93,17 @@ final readonly class Renderer
                 if (++$count > $this->limits->maxCommands) {
                     throw new LimitExceeded('Cumulative drawing command budget exceeded.');
                 }
-                if (!$command instanceof Text && !$command instanceof Rectangle && !$command instanceof Image) {
+                if (!$command instanceof Text && !$command instanceof Rectangle && !$command instanceof Image && !$command instanceof BorderBox) {
                     throw new ConversionException('Unknown drawing command.');
                 }
                 if (!is_finite($command->x) || !is_finite($command->y)) {
                     throw new ConversionException('Drawing positions must be finite.');
+                }
+                if ($command instanceof BorderBox) {
+                    $borderWork += (new BorderPainter())->patternWork($command);
+                    if (!is_finite($borderWork) || $borderWork > $this->limits->maxCommands) {
+                        throw new LimitExceeded('Cumulative border pattern work exceeds the drawing budget.');
+                    }
                 }
                 if ($command instanceof Text) {
                     $fonts->prepare($command);
@@ -106,7 +114,7 @@ final readonly class Renderer
                     }
                     if ($command instanceof Image) {
                         $images->prepare($command->asset);
-                    } elseif (!is_finite($command->borderWidth) || $command->borderWidth < 0) {
+                    } elseif ($command instanceof Rectangle && (!is_finite($command->borderWidth) || $command->borderWidth < 0)) {
                         throw new ConversionException('Border width must be finite and non-negative.');
                     }
                 }

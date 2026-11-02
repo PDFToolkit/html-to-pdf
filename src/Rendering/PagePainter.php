@@ -12,6 +12,7 @@ use PDF\Document\Structure\ObjectReference;
 use PDF\Document\Structure\StructureElement;
 use PDF\Fonts\OpenType\PositionedText;
 use PDF\Graphics\CoordinateSystems\Matrix;
+use PDF\HtmlToPdf\Drawing\BorderBox;
 use PDF\HtmlToPdf\Drawing\Image;
 use PDF\HtmlToPdf\Drawing\Rectangle;
 use PDF\HtmlToPdf\Drawing\Text;
@@ -64,10 +65,10 @@ final class PagePainter
         $annotations = [];
         $objects = [];
         foreach ($layout->commands as $command) {
-            if (!$command instanceof Text && !$command instanceof Rectangle && !$command instanceof Image) {
+            if (!$command instanceof Text && !$command instanceof Rectangle && !$command instanceof Image && !$command instanceof BorderBox) {
                 throw new ConversionException('Unsupported drawing command.');
             }
-            $semanticId = $command instanceof Rectangle ? null : $command->semanticId;
+            $semanticId = ($command instanceof Rectangle || $command instanceof BorderBox) ? null : $command->semanticId;
             if ($semanticId === null) {
                 $operators[] = new BeginMarkedContent(new NameType('Artifact'));
             } else {
@@ -106,6 +107,8 @@ final class PagePainter
                     new NumericType($layout->height - $command->y - $command->height),
                 ));
                 $operators[] = new InvokeXObject($this->images->name($command->asset));
+            } elseif ($command instanceof BorderBox) {
+                array_push($operators, ...(new BorderPainter())->operators($command, $layout->height));
             } elseif ($command instanceof Rectangle) {
                 array_push($operators, ...$this->rectangle($command, $layout->height));
             }

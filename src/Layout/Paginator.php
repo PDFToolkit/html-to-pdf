@@ -7,6 +7,7 @@ namespace PDF\HtmlToPdf\Layout;
 use PDF\HtmlToPdf\ConversionOptions;
 use PDF\HtmlToPdf\Diagnostics;
 use PDF\HtmlToPdf\Drawing\Command;
+use PDF\HtmlToPdf\Drawing\BorderBox;
 use PDF\HtmlToPdf\Drawing\Image;
 use PDF\HtmlToPdf\Drawing\Rectangle;
 use PDF\HtmlToPdf\Drawing\Text;
@@ -134,6 +135,7 @@ final class Paginator
         foreach ($item->commands as $command) {
             if ($artifact) {
                 $command = match (true) {
+                    $command instanceof BorderBox => new BorderBox($command->x, $command->y, $command->width, $command->height, $command->borders, $command->offset, $command->totalHeight),
                     $command instanceof Text => new Text($command->font, $command->text, $command->size, $command->x, $command->y, $command->color, null),
                     $command instanceof Image => new Image($command->x, $command->y, $command->width, $command->height, $command->asset),
                     $command instanceof Rectangle => new Rectangle($command->x, $command->y, $command->width, $command->height, $command->color, $command->borderColor, $command->borderWidth),
