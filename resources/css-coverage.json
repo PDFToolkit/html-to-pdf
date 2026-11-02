@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "0.1.0",
+  "packageVersion": "0.2.0",
   "activeStage": "css1",
   "stageOrder": [
     "css1",
@@ -132,9 +132,12 @@
       "status": "partial",
       "sample": "#176a80",
       "context": "div",
-      "note": "Hex, selected names and positive rgb(); complete CSS1 value/error handling remains unqualified.",
+      "note": "CSS1 hex, named colors and homogeneous signed integer/percentage rgb() with channel clipping; selected later color keywords remain explicit extensions. Full context/error qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/ValuesTest.php",
+        "tests/Css/SpecifiedCascadeTest.php",
+        "tests/Css/ColorFormatterTest.php"
       ]
     },
     {
@@ -148,7 +151,10 @@
       "context": "div",
       "note": "Solid/transparent box backgrounds; canvas propagation remains unqualified.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/ValuesTest.php",
+        "tests/Css/SpecifiedCascadeTest.php",
+        "tests/Css/ColorFormatterTest.php"
       ]
     },
     {
@@ -479,12 +485,15 @@
       "name": "border-top-width",
       "section": "5.5.11",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-top-width",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "1pt",
       "context": "div",
-      "note": "Independent border-side widths are not implemented.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -493,12 +502,15 @@
       "name": "border-right-width",
       "section": "5.5.12",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-right-width",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "1pt",
       "context": "div",
-      "note": "Independent border-side widths are not implemented.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -507,12 +519,15 @@
       "name": "border-bottom-width",
       "section": "5.5.13",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-bottom-width",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "1pt",
       "context": "div",
-      "note": "Independent border-side widths are not implemented.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -521,12 +536,15 @@
       "name": "border-left-width",
       "section": "5.5.14",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-left-width",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "1pt",
       "context": "div",
-      "note": "Independent border-side widths are not implemented.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -538,9 +556,12 @@
       "status": "partial",
       "sample": "1pt",
       "context": "div",
-      "note": "Uniform numeric width only; side tuples and keyword widths absent.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -552,9 +573,12 @@
       "status": "partial",
       "sample": "#176a80",
       "context": "div",
-      "note": "Uniform color only; individual sides absent.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -566,9 +590,12 @@
       "status": "partial",
       "sample": "solid",
       "context": "div",
-      "note": "Solid and none only; other border styles absent.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -577,12 +604,15 @@
       "name": "border-top",
       "section": "5.5.18",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-top",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "1pt solid black",
       "context": "div",
-      "note": "Independent border-side shorthands are not implemented.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -591,12 +621,15 @@
       "name": "border-right",
       "section": "5.5.19",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-right",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "1pt solid black",
       "context": "div",
-      "note": "Independent border-side shorthands are not implemented.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -605,12 +638,15 @@
       "name": "border-bottom",
       "section": "5.5.20",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-bottom",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "1pt solid black",
       "context": "div",
-      "note": "Independent border-side shorthands are not implemented.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -619,12 +655,15 @@
       "name": "border-left",
       "section": "5.5.21",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#border-left",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "1pt solid black",
       "context": "div",
-      "note": "Independent border-side shorthands are not implemented.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -636,9 +675,12 @@
       "status": "partial",
       "sample": "1pt solid black",
       "context": "div",
-      "note": "Uniform width/style/color tuple only; general shorthand grammar absent.",
+      "note": "Independent sides, CSS1 styles, width keywords and atomic shorthands. Computed styles preserve zero-width styles and transparent colors; inline borders remain unsupported and complete per-value/context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Layout/BordersTest.php",
+        "tests/Rendering/BorderPainterTest.php"
       ]
     },
     {
@@ -787,9 +829,10 @@
       "name": "selectors",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
       "status": "partial",
-      "note": "Basic selectors work; escaped identifiers and CSS1 anchor pseudo-classes/typographical pseudo-elements remain absent.",
+      "note": "Basic and escaped selectors, atomic selector lists and bounded matching; CSS1 anchor pseudo-classes and typographical pseudo-elements remain absent.",
       "tests": [
-        "tests/Css/CascadeTest.php"
+        "tests/Css/CascadeTest.php",
+        "tests/Css/SelectorListTest.php"
       ]
     },
     {
@@ -798,9 +841,12 @@
       "name": "cascade",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
       "status": "partial",
-      "note": "Author cascade works; user-origin styles, imports and historical CSS1-versus-modern precedence are not fully qualified.",
+      "note": "Author cascade, atomic declaration validation and explicit ordered imports; user-origin styles and complete historical-versus-modern precedence qualification remain absent.",
       "tests": [
-        "tests/Css/CascadeTest.php"
+        "tests/Css/CascadeTest.php",
+        "tests/Css/DeclarationsTest.php",
+        "tests/Css/SpecifiedCascadeTest.php",
+        "tests/Css/ImportTest.php"
       ]
     },
     {
@@ -811,7 +857,9 @@
       "status": "partial",
       "note": "Supported inherited fields are tested; absent properties prevent full inheritance coverage.",
       "tests": [
-        "tests/Css/CascadeTest.php"
+        "tests/Css/CascadeTest.php",
+        "tests/Css/BorderDeclarationsTest.php",
+        "tests/Css/ColorFormatterTest.php"
       ]
     },
     {
@@ -853,9 +901,12 @@
       "name": "syntax-recovery",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
       "status": "partial",
-      "note": "Explicit strict/report diagnostics; complete forward-compatible browser recovery is not implemented.",
+      "note": "Strict rejection by default; Report diagnoses invalid syntax and preserves supported adjacent declarations/rules using original lexical values. Complete forward-compatible browser recovery remains unqualified.",
       "tests": [
-        "tests/Parsing/HtmlCompilerTest.php"
+        "tests/Parsing/HtmlCompilerTest.php",
+        "tests/Css/CascadeRecoveryTest.php",
+        "tests/Css/SpecifiedCascadeTest.php",
+        "tests/Css/ParserProjectionTest.php"
       ]
     },
     {
@@ -863,10 +914,12 @@
       "kind": "behavior",
       "name": "imports",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
-      "status": "unsupported",
-      "note": "Linked catalog styles work, but recursive ordered @import does not.",
+      "status": "partial",
+      "note": "Ordered recursive @import from the explicit catalog, relative references and print/all selection; cycles, depth and cumulative work are bounded. No implicit retrieval; full syntax/media qualification is pending.",
       "tests": [
-        "tests/Css/CascadeTest.php"
+        "tests/Css/CascadeTest.php",
+        "tests/Css/ImportTest.php",
+        "tests/Css/CatalogUriTest.php"
       ]
     },
     {

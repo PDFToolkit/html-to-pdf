@@ -36,7 +36,7 @@ final class HtmlCompiler
         }
         [$html, $body] = $this->normalize($document, $budget);
         $this->validateTree($html, $options);
-        $cascade = new Cascade($document, $budget, $diagnostics);
+        $cascade = new Cascade($document, $budget, $diagnostics, $options->resources);
         $elements = iterator_to_array($document->getElementsByTagName('*'));
         foreach ($elements as $element) {
             $tag = strtolower($element->tagName);
@@ -44,18 +44,18 @@ final class HtmlCompiler
                 if ($element->hasAttribute('type') && !in_array(strtolower(trim($element->getAttribute('type'))), ['', 'text/css'], true)) {
                     $diagnostics->unsupported('html.style-type', 'Only text/css stylesheets are supported.');
                 } elseif ($cascade->printMedia($element->getAttribute('media'))) {
-                    $cascade->stylesheet($element->textContent);
+                    $cascade->stylesheet($element->textContent, $source->baseUri);
                 }
             } elseif ($tag === 'link') {
                 if (strtolower(trim($element->getAttribute('rel'))) !== 'stylesheet' || $element->hasAttribute('disabled')) {
                     $diagnostics->unsupported('html.link', 'Only enabled stylesheet link elements are supported.');
                 } elseif ($cascade->printMedia($element->getAttribute('media'))) {
-                    $cascade->stylesheet($options->resources->stylesheet($element->getAttribute('href')));
+                    $cascade->linkedStylesheet($element->getAttribute('href'), $source->baseUri);
                 }
             }
             $this->checkElement($element, $diagnostics);
         }
-        $cascade->stylesheet($source->stylesheet);
+        $cascade->stylesheet($source->stylesheet, $source->baseUri);
         foreach ($elements as $element) {
             if ($element->hasAttribute('style')) {
                 $cascade->inline($element, $element->getAttribute('style'));

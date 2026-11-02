@@ -12,7 +12,7 @@ final class Values
 {
     public function length(string $value, float $fontSize, float $rootSize, bool $percentage = false, bool $negative = false): Length|float
     {
-        if (preg_match('/^([+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+))(px|pt|pc|mm|cm|in|em|rem|%)?$/iD', trim($value), $parts) !== 1) {
+        if (preg_match('/^([+-]?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+))(px|pt|pc|mm|cm|in|em|rem|%)?$/iD', trim($value, " \t\r\n\f"), $parts) !== 1) {
             throw new \InvalidArgumentException('Unsupported length: ' . $value);
         }
         $number = (float) $parts[1];
@@ -34,7 +34,7 @@ final class Values
 
     public function color(string $value, Color $current): ?Color
     {
-        $value = strtolower(trim($value));
+        $value = strtolower(trim($value, " \t\r\n\f"));
         if ($value === 'transparent') {
             return null;
         }
@@ -52,10 +52,24 @@ final class Values
             }
             return new Color(hexdec(substr($hex, 0, 2)) / 255, hexdec(substr($hex, 2, 2)) / 255, hexdec(substr($hex, 4, 2)) / 255);
         }
-        if (preg_match('/^rgb\(\s*([0-9.]+%?)\s*,\s*([0-9.]+%?)\s*,\s*([0-9.]+%?)\s*\)$/D', $value, $match) === 1) {
+        if (str_starts_with($value, 'rgb(') && str_ends_with($value, ')')) {
+            $parts = explode(',', substr($value, 4, -1));
+            if (count($parts) !== 3) {
+                throw new \InvalidArgumentException('RGB requires exactly three components.');
+            }
+            $parts = array_map(static fn(string $part): string => trim($part, " \t\r\n\f"), $parts);
+            $percentage = str_ends_with($parts[0], '%');
+            $pattern = $percentage ? '/^[+-]?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)%$/D' : '/^[+-]?[0-9]+$/D';
             $values = [];
-            foreach (array_slice($match, 1) as $part) {
-                $values[] = min(1, (float) $part / (str_ends_with($part, '%') ? 100 : 255));
+            foreach ($parts as $part) {
+                if (preg_match($pattern, $part) !== 1) {
+                    throw new \InvalidArgumentException('RGB components must be three integers or three percentages.');
+                }
+                $number = (float) $part;
+                if (!is_finite($number)) {
+                    throw new \InvalidArgumentException('RGB components must be finite.');
+                }
+                $values[] = max(0.0, min(1.0, $number / ($percentage ? 100 : 255)));
             }
             return new Color($values[0], $values[1], $values[2]);
         }
@@ -65,7 +79,7 @@ final class Values
     /** @param list<string> $allowed */
     public function keyword(string $value, array $allowed): string
     {
-        $value = strtolower(trim($value));
+        $value = strtolower(trim($value, " \t\r\n\f"));
         if (!in_array($value, $allowed, true)) {
             throw new \InvalidArgumentException('Unsupported keyword: ' . $value);
         }

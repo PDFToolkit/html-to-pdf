@@ -6,12 +6,14 @@ namespace PDF\HtmlToPdf\Layout;
 
 use PDF\HtmlToPdf\ConversionOptions;
 use PDF\HtmlToPdf\Diagnostics;
+use PDF\HtmlToPdf\Drawing\BorderBox;
 use PDF\HtmlToPdf\Drawing\Image;
 use PDF\HtmlToPdf\Drawing\Rectangle;
 use PDF\HtmlToPdf\Drawing\Text;
 use PDF\HtmlToPdf\Exception\LimitExceeded;
 use PDF\HtmlToPdf\Exception\UnsupportedFeature;
 use PDF\HtmlToPdf\Model\Node;
+use PDF\HtmlToPdf\Style\Borders;
 use PDF\HtmlToPdf\Style\ComputedStyle;
 use PDF\HtmlToPdf\Style\Edges;
 
@@ -54,18 +56,20 @@ final class FlowBuilder
             $semantic = $this->semantics->add('LBody', $semantic);
         }
         $outerX = $x + $s->margin->left;
-        $extras = $s->padding->horizontal() + $s->borderWidth * 2;
+        $borders = $s->borderEdges();
+        $edges = $borders->widths();
+        $extras = $s->padding->horizontal() + $edges->horizontal();
         $blockImage = $node->tag === 'img' ? $this->image($node, $available, $semantic) : null;
         $width = $blockImage->imageWidth ?? $s->width?->resolve($available) ?? ($available - $s->margin->horizontal() - $extras);
         if ($width <= 0 || $width + $extras + $s->margin->horizontal() > $available + 0.001) {
             throw new UnsupportedFeature('A block box exceeds its available width.');
         }
-        $innerX = $outerX + $s->borderWidth + $s->padding->left;
+        $innerX = $outerX + $edges->left + $s->padding->left;
         $markerWidth = $marker === null ? 0.0 : max(18.0, $this->inline->face($s)->measure($marker . ' ', $s->fontSize));
         if ($node->tag === 'table') {
             $flow = $this->table($node, $innerX, $width, $semantic, $uri);
         } elseif ($node->tag === 'hr') {
-            $height = $s->height?->resolve($this->options->page->contentHeight()) ?? max(1.0, $s->borderWidth);
+            $height = $s->height?->resolve($this->options->page->contentHeight()) ?? max(1.0, $edges->top);
             $flow = [new FlowItem($height, [new Rectangle($innerX, 0, $width, $height, $s->color)])];
         } elseif ($node->tag === 'img') {
             $flow = [new FlowItem($blockImage->imageHeight, [new Image($innerX, 0, $blockImage->imageWidth, $blockImage->imageHeight, $blockImage->image, $blockImage->semanticId)])];
@@ -100,12 +104,12 @@ final class FlowBuilder
         $bottomMargin = new FlowItem($s->margin->bottom);
         $topMargin->margin = $bottomMargin->margin = true;
         $normalBlock = in_array($s->display, ['block', 'list-item'], true) && !in_array($node->tag, ['img', 'hr'], true);
-        if ($normalBlock && $s->padding->top + $s->borderWidth === 0.0 && $flow !== [] && $flow[0]->margin && !$flow[0]->breakBefore) {
+        if ($normalBlock && $s->padding->top + $edges->top === 0.0 && $flow !== [] && $flow[0]->margin && !$flow[0]->breakBefore) {
             $childMargin = array_shift($flow);
             $topMargin->height = max($topMargin->height, $childMargin->height);
             $topMargin->avoidGroups = $childMargin->avoidGroups;
         }
-        if ($normalBlock && $s->height === null && $s->padding->bottom + $s->borderWidth === 0.0 && $flow !== [] && $flow[array_key_last($flow)]->margin && !$flow[array_key_last($flow)]->breakAfter) {
+        if ($normalBlock && $s->height === null && $s->padding->bottom + $edges->bottom === 0.0 && $flow !== [] && $flow[array_key_last($flow)]->margin && !$flow[array_key_last($flow)]->breakAfter) {
             $childMargin = array_pop($flow);
             $bottomMargin->height = max($bottomMargin->height, $childMargin->height);
             $bottomMargin->avoidGroups = $childMargin->avoidGroups;
@@ -122,34 +126,51 @@ final class FlowBuilder
             if ($height > $s->height->value + 0.001) {
                 throw new UnsupportedFeature('Content exceeds an explicit block height.');
             }
-            $flow[] = new FlowItem($s->height->value - $height);
-        }
-        if ($s->padding->top + $s->borderWidth > 0) {
-            array_unshift($flow, new FlowItem($s->padding->top + $s->borderWidth));
-        }
-        if ($s->padding->bottom + $s->borderWidth > 0) {
-            $flow[] = new FlowItem($s->padding->bottom + $s->borderWidth);
+            if ($s->height->value > $height) {
+                $flow[] = new FlowItem($s->height->value - $height);
+            }
         }
         if ($flow === []) {
             $flow[] = new FlowItem(0);
         }
+        // Keep top/bottom padding and borders attached to actual content. A page break
+        // cannot strand a decoration-only slice before the first or after the last line.
+        $topInset = $s->padding->top + $edges->top;
+        $bottomInset = $s->padding->bottom + $edges->bottom;
+        $flow[0]->height += $topInset;
+        foreach ($flow[0]->commands as $index => $command) {
+            $flow[0]->commands[$index] = $this->translation->move($command, 0, $topInset);
+        }
+        $flow[array_key_last($flow)]->height += $bottomInset;
+        if ($topInset > 0) {
+            foreach ($flow as $item) {
+                $item->avoidGroups[] = 'box-start-' . $node->id;
+                if ($item->commands !== []) {
+                    break;
+                }
+            }
+        }
+        if ($bottomInset > 0 && $s->height === null) {
+            foreach (array_reverse($flow) as $item) {
+                $item->avoidGroups[] = 'box-end-' . $node->id;
+                if ($item->commands !== []) {
+                    break;
+                }
+            }
+        }
         $boxWidth = $width + $extras;
-        foreach ($flow as $index => $item) {
+        $boxHeight = array_sum(array_map(static fn(FlowItem $item): float => $item->height, $flow));
+        $offset = 0.0;
+        foreach ($flow as $item) {
             $decorations = [];
             if ($s->background !== null && $item->height > 0) {
                 $decorations[] = new Rectangle($outerX, 0, $boxWidth, $item->height, $s->background, semanticId: $semantic);
             }
-            if ($s->borderWidth > 0 && $item->height > 0) {
-                $decorations[] = new Rectangle($outerX, 0, $s->borderWidth, $item->height, $s->borderColor);
-                $decorations[] = new Rectangle($outerX + $boxWidth - $s->borderWidth, 0, $s->borderWidth, $item->height, $s->borderColor);
-                if ($index === 0) {
-                    $decorations[] = new Rectangle($outerX, 0, $boxWidth, $s->borderWidth, $s->borderColor);
-                }
-                if ($index === count($flow) - 1) {
-                    $decorations[] = new Rectangle($outerX, max(0, $item->height - $s->borderWidth), $boxWidth, $s->borderWidth, $s->borderColor);
-                }
+            if ($borders->hasWidth() && $item->height > 0) {
+                $decorations[] = new BorderBox($outerX, 0, $boxWidth, $item->height, $borders, $offset, $boxHeight, $semantic);
             }
             $item->commands = [...$decorations, ...$item->commands];
+            $offset += $item->height;
         }
         if ($topMargin->height > 0) {
             array_unshift($flow, $topMargin);
@@ -249,7 +270,7 @@ final class FlowBuilder
             if ($uri !== null) {
                 throw new UnsupportedFeature('Linked images are not supported by the initial annotation profile.');
             }
-            if ($node->style->padding->horizontal() !== 0.0 || $node->style->padding->vertical() !== 0.0 || $node->style->borderWidth !== 0.0 || $node->style->margin->horizontal() !== 0.0) {
+            if ($node->style->padding->horizontal() !== 0.0 || $node->style->padding->vertical() !== 0.0 || $node->style->borderEdges()->hasWidth() || $node->style->margin->horizontal() !== 0.0) {
                 throw new UnsupportedFeature('Inline image box decorations require display:block in this layout profile.');
             }
             return [$this->image($node, $width, $semantic)];
@@ -257,7 +278,7 @@ final class FlowBuilder
         if ($node->style->display !== 'inline') {
             throw new UnsupportedFeature('A block nested inside an inline formatting context is not supported.');
         }
-        if ($node->style->margin->horizontal() !== 0.0 || $node->style->padding->horizontal() !== 0.0 || $node->style->padding->vertical() !== 0.0 || $node->style->borderWidth !== 0.0) {
+        if ($node->style->margin->horizontal() !== 0.0 || $node->style->padding->horizontal() !== 0.0 || $node->style->padding->vertical() !== 0.0 || $node->style->borderEdges()->hasWidth()) {
             throw new UnsupportedFeature('Inline margins, padding and borders are outside this layout profile.');
         }
         $uri = $node->tag === 'a' ? $node->attribute('href') : $uri;
@@ -393,9 +414,10 @@ final class FlowBuilder
                 $styleValues['width'] = null;
                 $styleValues['background'] = null;
                 $styleValues['borderWidth'] = 0;
+                $styleValues['borders'] = new Borders();
                 $padding = $cell->style->padding;
-                $border = $cell->style->borderWidth;
-                $styleValues['padding'] = new Edges($padding->top + $border, $padding->right + $border, $padding->bottom + $border, $padding->left + $border);
+                $border = $cell->style->borderEdges()->widths();
+                $styleValues['padding'] = new Edges($padding->top + $border->top, $padding->right + $border->right, $padding->bottom + $border->bottom, $padding->left + $border->left);
                 $cellCopy = new Node($cell->id, $cell->tag, $cell->attributes, $cell->children, $cell->text, new ComputedStyle(...$styleValues));
                 $cellFlow = $this->build($cellCopy, $cellX, $widths[$index], $rowSemantic, uri: $uri);
                 foreach ($cellFlow as $item) {
@@ -422,12 +444,8 @@ final class FlowBuilder
                 if ($cellStyle->background !== null) {
                     $commands[] = new Rectangle($cellX, 0, $cellWidth, $height, $cellStyle->background);
                 }
-                if ($cellStyle->borderWidth > 0) {
-                    $border = $cellStyle->borderWidth;
-                    $commands[] = new Rectangle($cellX, 0, $cellWidth, $border, $cellStyle->borderColor);
-                    $commands[] = new Rectangle($cellX, $height - $border, $cellWidth, $border, $cellStyle->borderColor);
-                    $commands[] = new Rectangle($cellX, 0, $border, $height, $cellStyle->borderColor);
-                    $commands[] = new Rectangle($cellX + $cellWidth - $border, 0, $border, $height, $cellStyle->borderColor);
+                if ($cellStyle->borderEdges()->hasWidth()) {
+                    $commands[] = new BorderBox($cellX, 0, $cellWidth, $height, $cellStyle->borderEdges(), 0, $height);
                 }
                 $offset = match ($cellStyle->verticalAlign) {
                     'middle' => ($height - $cellHeight) / 2,

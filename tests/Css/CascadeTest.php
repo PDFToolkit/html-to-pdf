@@ -90,7 +90,7 @@ final class CascadeTest extends CompilerTestCase
         $diagnostics = new Diagnostics(UnsupportedPolicy::Report);
         $document = $this->compile('<p id="x">X</p>', 'p{display:grid;color:red} @page{size:A5}', $this->options(policy: UnsupportedPolicy::Report), $diagnostics);
         self::assertSame('block', $this->find($document->root, 'x')->style->display);
-        self::assertSame(['css.at-rule', 'css.value'], array_map(static fn($item) => $item->code, $diagnostics->all()));
+        self::assertSame(['css.value', 'css.at-rule'], array_map(static fn($item) => $item->code, $diagnostics->all()));
     }
 
     /** @return iterable<string,array{string}> */
@@ -98,7 +98,6 @@ final class CascadeTest extends CompilerTestCase
     {
         yield 'dynamic selector' => ['p:hover{color:red}'];
         yield 'pseudo element' => ['p::before{color:red}'];
-        yield 'import' => ['@import "https://unused.invalid/x.css";'];
         yield 'page' => ['@page{size:A4}'];
         yield 'font face' => ['@font-face{font-family:x;src:url(file:///x.ttf)}'];
         yield 'positioning' => ['p{position:absolute}'];

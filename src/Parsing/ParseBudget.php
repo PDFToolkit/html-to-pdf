@@ -16,6 +16,7 @@ final class ParseBudget
     private int $cssBytes = 0;
     private int $rules = 0;
     private int $selectorWork = 0;
+    private int $imports = 0;
 
     public function __construct(public readonly ConversionLimits $limits) {}
 
@@ -109,5 +110,12 @@ final class ParseBudget
             throw new LimitExceeded('CSS selector work budget exhausted.');
         }
         $this->selectorWork += $cost;
+    }
+
+    public function import(int $depth): void
+    {
+        if (++$this->imports > $this->limits->maxImports || $depth > $this->limits->maxImportDepth) {
+            throw new LimitExceeded('CSS import count or depth budget exhausted.');
+        }
     }
 }

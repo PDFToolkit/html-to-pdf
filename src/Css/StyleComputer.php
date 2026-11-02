@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PDF\HtmlToPdf\Css;
 
 use PDF\HtmlToPdf\Diagnostics;
+use PDF\HtmlToPdf\Style\Borders;
 use PDF\HtmlToPdf\Style\Color;
 use PDF\HtmlToPdf\Style\ComputedStyle;
 use PDF\HtmlToPdf\Style\Edges;
@@ -13,17 +14,19 @@ use PDF\HtmlToPdf\Style\Length;
 final readonly class StyleComputer
 {
     private Values $values;
+    private BorderComputer $borderComputer;
 
     public function __construct(private Diagnostics $diagnostics)
     {
         $this->values = new Values();
+        $this->borderComputer = new BorderComputer();
     }
 
     /** @param array<string,string> $author */
     public function compute(string $tag, array $author, StyleState $parent, float $rootSize = 12): StyleState
     {
-        $initial = $this->serialize(new ComputedStyle());
-        $initial['border-color'] = 'currentcolor';
+        $author = $this->expandLegacyBorders($author);
+        $initial = array_replace($this->serialize(new ComputedStyle()), $this->borderComputer->defaults());
         $inherited = $this->serialize($parent->style);
         $inheritedNames = ['font-size', 'line-height', 'font-weight', 'font-style', 'color', 'text-align', 'white-space', 'orphans', 'widows', 'list-style-type'];
         $css = array_replace($initial, array_intersect_key($inherited, array_flip($inheritedNames)), $this->defaults($tag));
@@ -57,7 +60,7 @@ final readonly class StyleComputer
                 $lineHeight = $lineFactor * $fontSize;
             } elseif (!in_array($raw, ['inherit', 'unset'], true)) {
                 $lineHeight = $this->value('line-height', function () use ($raw, $fontSize, $rootSize, &$lineFactor): float {
-                    if (preg_match('/^(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)$/D', $raw) === 1) {
+                    if (preg_match('/^\+?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)$/D', $raw) === 1) {
                         $number = (float) $raw;
                         if ($number <= 0 || $number > 100) {
                             throw new \InvalidArgumentException('Unsupported line-height multiplier.');
@@ -97,12 +100,10 @@ final readonly class StyleComputer
         $underline = $parent->style->underline || $localUnderline;
         $margin = $this->edges('margin', $css, $fontSize, $rootSize);
         $padding = $this->edges('padding', $css, $fontSize, $rootSize);
-        $borderStyle = $this->value('border-style', fn(): string => $this->values->keyword($css['border-style'], ['none', 'solid']), 'none');
-        $borderWidth = $this->value('border-width', fn(): float => $this->values->points($css['border-width'], $fontSize, $rootSize), 0.0);
-        if ($borderStyle === 'none') {
-            $borderWidth = 0;
-        }
-        $borderColor = $this->value('border-color', fn(): Color => $this->values->color($css['border-color'], $color) ?? throw new \InvalidArgumentException('Transparent borders are not supported.'), $color);
+        $borders = $this->value('border', fn(): Borders => $this->borderComputer->compute($css, $fontSize, $rootSize, $color), new Borders());
+        // Keep the legacy uniform fields as projections of the top side; layout uses all four sides.
+        $borderWidth = $borders->top->effectiveWidth();
+        $borderColor = $borders->top->color ?? $color;
         $width = $this->dimension($css['width'], $fontSize, $rootSize, true);
         $height = $this->dimension($css['height'], $fontSize, $rootSize, false);
         $before = $this->value('break-before', fn(): string => $this->values->keyword($css['break-before'], ['auto', 'page', 'always']), 'auto');
@@ -117,7 +118,25 @@ final readonly class StyleComputer
             $vertical = 'top';
         }
         $tableLayout = $this->value('table-layout', fn(): string => $this->values->keyword($css['table-layout'], ['auto', 'fixed']), 'auto');
-        return new StyleState(new ComputedStyle($display, $fontSize, $lineHeight, $fontWeight, $italic, $color, $background, $align, $whiteSpace, $underline, $margin, $padding, $borderWidth, $borderColor, $width, $height, $before, $after, $avoid, $orphans, $widows, $listStyle, $vertical, $tableLayout), $lineFactor);
+        return new StyleState(new ComputedStyle($display, $fontSize, $lineHeight, $fontWeight, $italic, $color, $background, $align, $whiteSpace, $underline, $margin, $padding, $borderWidth, $borderColor, $width, $height, $before, $after, $avoid, $orphans, $widows, $listStyle, $vertical, $tableLayout, $borders), $lineFactor);
+    }
+
+    /** Preserve the uniform border input accepted by the 0.1 computed-style API.
+     * @param array<string,string> $author
+     * @return array<string,string>
+     */
+    private function expandLegacyBorders(array $author): array
+    {
+        if (!isset($author['border-width']) && !isset($author['border-style']) && !isset($author['border-color'])) {
+            return $author;
+        }
+        $result = [];
+        $declarations = new Declarations($this->diagnostics);
+        foreach ($author as $property => $value) {
+            $result = array_replace($result, in_array($property, ['border-width', 'border-style', 'border-color'], true)
+                ? $declarations->expand($property, $value) : [$property => $value]);
+        }
+        return $result;
     }
 
     /**
@@ -203,8 +222,10 @@ final readonly class StyleComputer
             $values['text-align'] = 'center';
         }
         if ($tag === 'hr') {
-            $values['border-width'] = '1pt';
-            $values['border-style'] = 'solid';
+            foreach (['top', 'right', 'bottom', 'left'] as $side) {
+                $values['border-' . $side . '-width'] = '1pt';
+                $values['border-' . $side . '-style'] = 'solid';
+            }
         }
         return $values;
     }
@@ -212,14 +233,14 @@ final readonly class StyleComputer
     /** @return array<string,string> */
     private function serialize(ComputedStyle $s): array
     {
-        $color = static fn(Color $c): string => 'rgb(' . ($c->red * 255) . ',' . ($c->green * 255) . ',' . ($c->blue * 255) . ')';
+        $color = (new ColorFormatter())->format(...);
         $dimension = static fn(?Length $length): string => $length === null ? 'auto' : $length->value . ($length->percentage ? '%' : 'pt');
-        $values = ['display' => $s->display, 'font-size' => $s->fontSize . 'pt', 'line-height' => $s->lineHeight . 'pt', 'font-weight' => (string) $s->fontWeight, 'font-style' => $s->italic ? 'italic' : 'normal', 'color' => $color($s->color), 'background-color' => $s->background === null ? 'transparent' : $color($s->background), 'text-align' => $s->textAlign, 'white-space' => $s->whiteSpace, 'text-decoration' => $s->underline ? 'underline' : 'none', 'border-width' => $s->borderWidth . 'pt', 'border-style' => $s->borderWidth > 0 ? 'solid' : 'none', 'border-color' => $color($s->borderColor), 'width' => $dimension($s->width), 'height' => $dimension($s->height), 'break-before' => $s->breakBefore, 'break-after' => $s->breakAfter, 'break-inside' => $s->breakInsideAvoid ? 'avoid' : 'auto', 'orphans' => (string) $s->orphans, 'widows' => (string) $s->widows, 'list-style-type' => $s->listStyleType, 'vertical-align' => $s->verticalAlign, 'table-layout' => $s->tableLayout];
+        $values = ['display' => $s->display, 'font-size' => $s->fontSize . 'pt', 'line-height' => $s->lineHeight . 'pt', 'font-weight' => (string) $s->fontWeight, 'font-style' => $s->italic ? 'italic' : 'normal', 'color' => $color($s->color), 'background-color' => $s->background === null ? 'transparent' : $color($s->background), 'text-align' => $s->textAlign, 'white-space' => $s->whiteSpace, 'text-decoration' => $s->underline ? 'underline' : 'none', 'width' => $dimension($s->width), 'height' => $dimension($s->height), 'break-before' => $s->breakBefore, 'break-after' => $s->breakAfter, 'break-inside' => $s->breakInsideAvoid ? 'avoid' : 'auto', 'orphans' => (string) $s->orphans, 'widows' => (string) $s->widows, 'list-style-type' => $s->listStyleType, 'vertical-align' => $s->verticalAlign, 'table-layout' => $s->tableLayout];
         foreach (['margin', 'padding'] as $name) {
             foreach (['top', 'right', 'bottom', 'left'] as $side) {
                 $values[$name . '-' . $side] = $s->$name->$side . 'pt';
             }
         }
-        return $values;
+        return array_replace($values, $this->borderComputer->serialize($s->borderEdges()));
     }
 }

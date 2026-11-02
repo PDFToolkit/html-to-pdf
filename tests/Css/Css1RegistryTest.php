@@ -39,6 +39,9 @@ final class Css1RegistryTest extends CompilerTestCase
             'border-style' => 'border-width:1pt;',
             default => '',
         };
+        if (preg_match('/^border-(top|right|bottom|left)-width$/D', $property, $match) === 1) {
+            $base = 'border-' . $match[1] . '-style:solid;';
+        }
         $css = '#subject{' . $base . $property . ':' . $sample . '}';
         if ($status === 'unsupported') {
             $this->expectException(UnsupportedFeature::class);
@@ -72,6 +75,12 @@ final class Css1RegistryTest extends CompilerTestCase
 
     private function assertComputedWitness(string $property, ComputedStyle $style): void
     {
+        if (preg_match('/^border-(top|right|bottom|left)(?:-width)?$/D', $property, $match) === 1) {
+            $border = $style->borderEdges()->{$match[1]};
+            self::assertSame(1.0, $border->effectiveWidth());
+            self::assertSame('solid', $border->style->value);
+            return;
+        }
         if (str_starts_with($property, 'margin') || str_starts_with($property, 'padding')) {
             [$box, $side] = array_pad(explode('-', $property, 2), 2, null);
             $edges = $box === 'margin' ? $style->margin : $style->padding;

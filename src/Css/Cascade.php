@@ -6,14 +6,17 @@ namespace PDF\HtmlToPdf\Css;
 
 use PDF\HtmlToPdf\Diagnostics;
 use PDF\HtmlToPdf\Parsing\ParseBudget;
+use PDF\HtmlToPdf\Resource\CatalogUri;
+use PDF\HtmlToPdf\Resource\ResourceCatalog;
 use Sabberworm\CSS\CSSList\AtRuleBlockList;
 use Sabberworm\CSS\CSSList\CSSList;
 use Sabberworm\CSS\OutputFormat;
 use Sabberworm\CSS\Parser;
 use Sabberworm\CSS\Parsing\SourceException;
+use Sabberworm\CSS\Property\Charset;
+use Sabberworm\CSS\Property\Import;
 use Sabberworm\CSS\RuleSet\DeclarationBlock;
 use Sabberworm\CSS\Settings;
-use Sabberworm\CSS\Value\Value;
 use Symfony\Component\CssSelector\Exception\ExceptionInterface;
 use Symfony\Component\CssSelector\Node\Specificity;
 use Symfony\Component\CssSelector\Parser\Parser as SelectorParser;
@@ -30,8 +33,10 @@ final class Cascade
     private readonly Translator $translator;
     private readonly Declarations $declarations;
     private readonly int $elementCount;
+    /** @var array<string,true> Active imports only; repeated independent imports must still cascade. */
+    private array $imports = [];
 
-    public function __construct(private readonly \DOMDocument $document, private readonly ParseBudget $budget, private readonly Diagnostics $diagnostics)
+    public function __construct(private readonly \DOMDocument $document, private readonly ParseBudget $budget, private readonly Diagnostics $diagnostics, private readonly ResourceCatalog $resources = new ResourceCatalog())
     {
         $this->xpath = new \DOMXPath($document);
         $this->translator = new Translator();
@@ -40,25 +45,54 @@ final class Cascade
         $this->elementCount = $document->getElementsByTagName('*')->length;
     }
 
-    public function stylesheet(string $css): void
+    public function stylesheet(string $css, ?string $baseUri = null): void
     {
         $this->budget->css($css);
+        $parsed = $this->parse($css);
+        if ($parsed !== null) {
+            $this->blocks($parsed, new DeclarationSource($css), $baseUri, 0, true);
+        }
+    }
+
+    public function linkedStylesheet(string $uri, ?string $baseUri = null): void
+    {
+        $resolved = (new CatalogUri())->resolve($uri, $baseUri);
+        $this->load($resolved, 0);
+    }
+
+    private function parse(string $css): ?CSSList
+    {
+        $projected = (new ParserProjection($this->diagnostics))->project($css);
+        if ($projected === null) {
+            return null;
+        }
         try {
-            $parsed = (new Parser($css, Settings::create()->beStrict()))->parse();
+            return (new Parser($projected, Settings::create()->beStrict()))->parse();
+        } catch (\ValueError $error) {
+            // Defense in depth for third-party encoding handling after malformed syntax.
+            $this->diagnostics->unsupported('css.charset', 'CSS parser rejected the stylesheet encoding: ' . $error->getMessage());
+            return null;
         } catch (SourceException $error) {
             $this->diagnostics->unsupported('css.syntax', 'CSS cannot be parsed: ' . $error->getMessage());
-            return;
+            // Reject throws above. Report recovers only within this already-budgeted source.
+            try {
+                return (new Parser($projected, Settings::create()->withLenientParsing()))->parse();
+            } catch (\ValueError $recoveryError) {
+                $this->diagnostics->unsupported('css.charset', 'CSS recovery rejected the stylesheet encoding: ' . $recoveryError->getMessage());
+                return null;
+            } catch (SourceException $recoveryError) {
+                $this->diagnostics->unsupported('css.syntax', 'CSS recovery stopped: ' . $recoveryError->getMessage());
+                return null;
+            }
         }
-        $this->blocks($parsed);
     }
 
     public function inline(\DOMElement $element, string $css): void
     {
         $this->budget->css($css);
-        try {
-            $parsed = (new Parser('x{' . $css . '}', Settings::create()->beStrict()))->parse();
-        } catch (SourceException $error) {
-            $this->diagnostics->unsupported('css.syntax', 'Inline CSS cannot be parsed: ' . $error->getMessage());
+        $wrapped = 'x{' . $css . '}';
+        $parsed = $this->parse($wrapped);
+        if ($parsed === null) {
             return;
         }
         $contents = $parsed->getContents();
@@ -66,7 +100,7 @@ final class Cascade
             $this->diagnostics->unsupported('css.inline', 'An inline style must contain declarations only.');
             return;
         }
-        $this->apply($contents[0], [$element], new Specificity(0, 0, 0), true);
+        $this->apply($this->prepare($contents[0], new DeclarationSource($wrapped)), [$element], new Specificity(0, 0, 0), true);
     }
 
     /** @return array<string,string> */
@@ -92,79 +126,118 @@ final class Cascade
         return $matches;
     }
 
-    private function blocks(CSSList $list): void
+    private function blocks(CSSList $list, DeclarationSource $source, ?string $baseUri, int $depth, bool $topLevel): void
     {
+        $importsAllowed = $topLevel;
         foreach ($list->getContents() as $block) {
+            if ($block instanceof Charset) {
+                if (!in_array(strtolower($block->getCharset()), ['utf-8', 'utf8'], true)) {
+                    $this->diagnostics->unsupported('css.charset', 'Only explicitly supplied UTF-8 stylesheets are supported.');
+                    return;
+                }
+                continue;
+            }
+            if ($block instanceof Import) {
+                $this->budget->import($depth + 1);
+                if (!$importsAllowed) {
+                    $this->diagnostics->unsupported('css.import-order', '@import is allowed only before other rules at stylesheet top level.');
+                } elseif ($this->printMedia($block->getMediaQuery() ?? '')) {
+                    $uri = (new CatalogUri())->resolve($block->getLocation()->getURL()->getString(), $baseUri);
+                    $this->load($uri, $depth + 1);
+                }
+                continue;
+            }
+            $importsAllowed = false;
             if ($block instanceof AtRuleBlockList && strtolower($block->atRuleName()) === 'media') {
                 if ($this->printMedia($block->atRuleArgs())) {
-                    $this->blocks($block);
+                    $this->blocks($block, $source, $baseUri, $depth, false);
                 }
                 continue;
             }
             if (!$block instanceof DeclarationBlock) {
-                $this->diagnostics->unsupported('css.at-rule', 'Only print/all @media rules are supported; other CSS at-rules are not executed.');
+                $this->diagnostics->unsupported('css.at-rule', 'Only explicit @import and print/all @media rules are supported.');
                 continue;
             }
-            foreach ($block->getSelectors() as $selector) {
-                $text = $selector->render(new OutputFormat());
-                $this->budget->selector($text, $this->elementCount);
-                if (!$this->supportedSelector($text)) {
-                    continue;
-                }
-                try {
-                    $parsed = (new SelectorParser())->parse($text);
-                    if (count($parsed) !== 1 || $parsed[0]->getPseudoElement() !== null) {
-                        $this->diagnostics->unsupported('css.selector', 'Pseudo-elements are not supported: ' . $text);
-                        continue;
-                    }
-                    $expression = $this->translator->cssToXPath($text);
-                    $matches = $this->xpath->query($expression);
-                } catch (ExceptionInterface $error) {
-                    $this->diagnostics->unsupported('css.selector', 'Unsupported selector: ' . $text . ': ' . $error->getMessage());
-                    continue;
-                }
-                $elements = [];
-                if ($matches !== false) {
-                    foreach ($matches as $match) {
-                        if ($match instanceof \DOMElement) {
-                            $elements[] = $match;
-                        }
-                    }
-                }
-                $this->apply($block, $elements, $parsed[0]->getSpecificity(), false);
-            }
+            $this->rule($block, $source);
         }
     }
 
-    private function supportedSelector(string $selector): bool
+    private function load(string $uri, int $depth): void
     {
-        // Escaped identifiers and dynamic pseudo-classes have no published v0.1 contract.
-        if (str_contains($selector, '\\')) {
-            $this->diagnostics->unsupported('css.selector', 'Escaped CSS selectors are outside the supported profile.');
-            return false;
+        if (isset($this->imports[$uri])) {
+            $this->diagnostics->unsupported('css.import-cycle', 'Cyclic explicit stylesheet import: ' . $uri);
+            return;
         }
-        $unquoted = preg_replace('/"[^"\\\\]*(?:\\\\.[^"\\\\]*)*"|\'[^\'\\\\]*(?:\\\\.[^\'\\\\]*)*\'/s', '', $selector) ?? '';
-        preg_match_all('/:([a-zA-Z-]+)/', $unquoted, $names);
-        $allowed = ['root', 'empty', 'first-child', 'last-child', 'only-child', 'nth-child', 'nth-last-child', 'first-of-type', 'last-of-type', 'only-of-type', 'nth-of-type', 'nth-last-of-type', 'not', 'is', 'where'];
-        foreach ($names[1] as $name) {
-            if (!in_array(strtolower($name), $allowed, true)) {
-                $this->diagnostics->unsupported('css.selector', 'Unsupported CSS pseudo-class: ' . $name);
-                return false;
+        $css = $this->resources->stylesheet($uri);
+        $this->budget->css($css);
+        $this->imports[$uri] = true;
+        try {
+            $parsed = $this->parse($css);
+            if ($parsed !== null) {
+                $this->blocks($parsed, new DeclarationSource($css), $uri, $depth, true);
             }
+        } finally {
+            unset($this->imports[$uri]);
         }
-        return true;
     }
 
-    /** @param list<\DOMElement> $elements */
-    private function apply(DeclarationBlock $block, array $elements, Specificity $specificity, bool $inline): void
+    private function rule(DeclarationBlock $block, DeclarationSource $source): void
     {
+        // Compile the complete selector list before applying any of its declarations.
+        $compiled = [];
+        $policy = new SelectorPolicy();
+        foreach ($block->getSelectors() as $selector) {
+            $text = $selector->render(new OutputFormat());
+            $this->budget->selector($text, $this->elementCount);
+            try {
+                $parsed = (new SelectorParser())->parse($text);
+                if (count($parsed) !== 1 || !$policy->supports($parsed[0], $this->budget->limits->maxDepth)) {
+                    $this->diagnostics->unsupported('css.selector', 'Unsupported selector invalidates its complete list: ' . $text);
+                    return;
+                }
+                $expression = $this->translator->cssToXPath($text);
+                $matches = $this->xpath->query($expression);
+            } catch (ExceptionInterface $error) {
+                $this->diagnostics->unsupported('css.selector', 'Unsupported selector: ' . $text . ': ' . $error->getMessage());
+                return;
+            }
+            $elements = [];
+            if ($matches !== false) {
+                foreach ($matches as $match) {
+                    if ($match instanceof \DOMElement) {
+                        $elements[] = $match;
+                    }
+                }
+            }
+            $compiled[] = [$elements, $parsed[0]->getSpecificity()];
+        }
+        $declarations = $this->prepare($block, $source);
+        foreach ($compiled as [$elements, $specificity]) {
+            $this->apply($declarations, $elements, $specificity, false);
+        }
+    }
+
+    /** @return list<array{values:array<string,string>,important:bool,order:int}> */
+    private function prepare(DeclarationBlock $block, DeclarationSource $source): array
+    {
+        $result = [];
         foreach ($block->getDeclarations() as $declaration) {
-            $raw = $declaration->getValue();
-            $value = $raw instanceof Value ? $raw->render(new OutputFormat()) : (string) $raw;
+            $value = $source->value($declaration);
             $expanded = $this->declarations->expand($declaration->getPropertyName(), $value);
-            $order = ++$this->order;
-            foreach ($expanded as $property => $propertyValue) {
-                $candidate = new CascadedValue($propertyValue, $declaration->getIsImportant(), $inline, $specificity, $order);
+            $result[] = ['values' => $expanded, 'important' => $declaration->getIsImportant(), 'order' => ++$this->order];
+        }
+        return $result;
+    }
+
+    /**
+     * @param list<array{values:array<string,string>,important:bool,order:int}> $declarations
+     * @param list<\DOMElement> $elements
+     */
+    private function apply(array $declarations, array $elements, Specificity $specificity, bool $inline): void
+    {
+        foreach ($declarations as $declaration) {
+            foreach ($declaration['values'] as $property => $propertyValue) {
+                $candidate = new CascadedValue($propertyValue, $declaration['important'], $inline, $specificity, $declaration['order']);
                 foreach ($elements as $element) {
                     $path = $element->getNodePath();
                     $previous = $this->values[$path][$property] ?? null;

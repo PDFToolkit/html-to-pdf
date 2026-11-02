@@ -6,5 +6,5 @@ namespace PDF\HtmlToPdf;
 
 final readonly class HtmlSource
 {
-    public function __construct(public string $html, public string $stylesheet = '') {}
+    public function __construct(public string $html, public string $stylesheet = '', public ?string $baseUri = null) {}
 }
