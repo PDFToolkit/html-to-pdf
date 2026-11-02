@@ -6,6 +6,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { chromium, firefox } = require('playwright');
+const { CssFoundationOracle } = require('./css_foundation_oracle.cjs');
 
 class StyleOracle {
   constructor(input, output) {
@@ -47,6 +48,7 @@ class StyleOracle {
       assert.equal(this.hash(layoutHtml), witness.layoutFixture.htmlSha256);
       this.report.input = { path: this.input, sha256: this.hash(bytes), htmlSha256: this.hash(html), layoutHtmlSha256: this.hash(layoutHtml), phpVersion: witness.phpVersion };
       this.report.references = witness.references;
+      this.foundations = new CssFoundationOracle(this.input, this.output, witness.css1FoundationFixture);
       for (const [name, type] of Object.entries({ chromium, firefox })) {
         await this.browser(name, type, html.toString('utf8'), witness.witnesses, layoutHtml.toString('utf8'), witness.layoutFixture);
       }
@@ -121,6 +123,9 @@ class StyleOracle {
       const layoutScreenshot = `${name}-layout.png`;
       await page.screenshot({ path: path.join(this.output, layoutScreenshot), fullPage: true, animations: 'disabled' });
       record.layout.screenshot = { file: layoutScreenshot, sha256: this.hash(fs.readFileSync(path.join(this.output, layoutScreenshot))) };
+      record.css1Foundations = await this.foundations.run(browser, name);
+      record.comparisons += record.css1Foundations.comparisons;
+      record.failures.push(...record.css1Foundations.failures.map(failure => ({ scope: 'CSS1 foundations', ...failure })));
       record.passed = record.failures.length === 0;
     } catch (error) {
       record.failures.push({ error: error.stack || String(error) });

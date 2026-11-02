@@ -74,6 +74,7 @@ jobs:
       - run: npm audit --prefix tools
       - run: npx --prefix tools playwright install --with-deps chromium firefox
       - run: php tests/export-style-witnesses.php _build/styles
+      - run: node tools/test_css_foundation_oracle.cjs _build/styles/styles.json
       - run: node tools/validate_styles.cjs _build/styles/styles.json _build/styles/browsers
       - uses: actions/upload-artifact@v7
         if: always()

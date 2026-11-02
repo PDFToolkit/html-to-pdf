@@ -14,6 +14,7 @@ use PDF\HtmlToPdf\HtmlSource;
 use PDF\HtmlToPdf\Model\Node;
 use PDF\HtmlToPdf\Parsing\HtmlCompiler;
 use PDF\HtmlToPdf\Style\Color;
+use PDF\HtmlToPdf\Tests\Support\CssFoundationWitnessExporter;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -175,6 +176,7 @@ HTML;
             'htmlFile' => 'styles.html', 'htmlSha256' => hash('sha256', self::HTML), 'media' => 'print',
             'diagnostics' => $diagnostics->all(), 'witnesses' => $witnesses,
             'layoutFixture' => (new LayoutWitnessExporter())->export($directory, new FontSet(new FontFace($fontBytes))),
+            'css1FoundationFixture' => (new CssFoundationWitnessExporter())->export($directory, new FontSet(new FontFace($fontBytes))),
         ];
         if (file_put_contents($directory . '/styles.html', self::HTML) === false
             || file_put_contents($directory . '/styles.json', json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . "\n") === false) {
