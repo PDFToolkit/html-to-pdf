@@ -4,6 +4,12 @@
 
 ## Non publié
 
+## 0.2.2 — 2026-11-02
+
+- Présenter le convertisseur natif à partir des spécifications primaires HTML/CSS, de sa couverture implémentée et des preuves de validation. Harmoniser les guides FR/EN et les règles de contribution.
+- Préciser l’indépendance de l’implémentation MIT et l’origine des ressources d’exemple, en conservant les limites explicites de couverture CSS et de qualification PDF/A/PDF/UA.
+- Correction documentaire uniquement ; conversion, dépendances et API publiques inchangées.
+
 ## 0.2.1 — 2026-11-02
 
 - Utiliser le nom Composer canonique `pdftoolkit/pdf:^0.12.2` et les dépendances stables migrées. Conserver les namespaces PHP, API et comportements existants.

@@ -4,6 +4,12 @@
 
 ## Unreleased
 
+## 0.2.2 — 2026-11-02
+
+- Describe the native converter through primary HTML/CSS specifications, its implemented coverage and validation evidence. Keep the English/French guides and contributor policy consistent.
+- Clarify independent MIT licensing and original example assets while retaining explicit CSS coverage and PDF/A/PDF/UA qualification limits.
+- Documentation-only correction; conversion behavior, dependencies and public APIs are unchanged.
+
 ## 0.2.1 — 2026-11-02
 
 - Use the canonical Composer package `pdftoolkit/pdf:^0.12.2` and migrated stable dependencies. Keep existing PHP namespaces, APIs and behavior.
