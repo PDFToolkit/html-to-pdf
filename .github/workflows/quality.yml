@@ -44,6 +44,10 @@ jobs:
         run: php -d memory_limit=512M examples/generate.php _build/examples
       - name: Validate content, structure, fonts, annotations and all rendered pages
         run: python tools/validate_pdf.py --directory _build/examples
+      - name: Convert the unchanged historical W3C CSS1 float document
+        run: php -d memory_limit=512M examples/generate-w3c.php _build/examples/w3c
+      - name: Verify W3C PDF text, float geometry, borders and canvas independently
+        run: python tools/validate_w3c_css1.py --pdf _build/examples/w3c/test5526c.pdf --manifest _build/examples/w3c/manifest.json --output _build/examples/w3c/validation
       - name: Reject corrupt text maps with independent mutation witnesses
         run: python tests/test_pdf_text_oracle.py --pdf _build/examples/invoice.pdf --report _build/examples/text-oracle-regressions.json
       - uses: actions/upload-artifact@v7
@@ -76,6 +80,8 @@ jobs:
       - run: php tests/export-style-witnesses.php _build/styles
       - run: node tools/test_css_foundation_oracle.cjs _build/styles/styles.json
       - run: node tools/validate_styles.cjs _build/styles/styles.json _build/styles/browsers
+      - run: node tools/test_w3c_css1_oracle.cjs
+      - run: node tools/validate_w3c_css1.cjs _build/styles/w3c
       - uses: actions/upload-artifact@v7
         if: always()
         with:
