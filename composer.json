@@ -48,7 +48,7 @@
         "test": "@php -d memory_limit=512M vendor/bin/phpunit --fail-on-deprecation",
         "analyse": "phpstan analyse --no-progress",
         "format": "php-cs-fixer fix",
-        "format:check": "php-cs-fixer fix --dry-run --diff",
+        "format:check": "php-cs-fixer fix --dry-run --diff --using-cache=no",
         "check": [
             "@test",
             "@analyse",

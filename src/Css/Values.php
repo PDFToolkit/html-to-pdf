@@ -21,7 +21,7 @@ final class Values
             throw new \InvalidArgumentException('Unsupported length range or unit: ' . $value);
         }
         $factor = match ($unit) {
-            'px' => .75, 'pc' => 12, 'mm' => 72 / 25.4, 'cm' => 72 / 2.54, 'in' => 72, 'em' => $fontSize, 'rem' => $rootSize, default => 1
+            'px' => .75, 'pc' => 12, 'mm' => 72 / 25.4, 'cm' => 72 / 2.54, 'in' => 72, 'em' => $fontSize, 'rem' => $rootSize, default => 1,
         };
         return $negative ? $number * $factor : new Length($number * $factor, $unit === '%');
     }
