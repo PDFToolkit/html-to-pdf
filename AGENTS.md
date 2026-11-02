@@ -1,7 +1,7 @@
 # Contributor instructions
 
 - Implement HTML-to-PDF in this optional PHP module, using explicit objects and document-scoped processing. Keep the PDF core unchanged unless its own PDF mechanisms require a separate correction.
-- This is an independent MIT implementation. iText pdfHTML is a feature reference, not a source to copy or translate. Record primary HTML/CSS references and implemented coverage accurately.
+- This is an independent MIT implementation based on primary HTML/CSS references. Describe PDFToolkit through its implemented coverage, standards and validation evidence. Keep third-party product comparisons and promotional references out of source, documentation and release publications.
 - Parse HTML5 with an explicit parser. Separate source objects, CSS cascade, computed styles, pagination, drawing operations and PDF serialization.
 - Use bounded input and cumulative work/resource limits. No implicit filesystem, network or process access, no JavaScript execution. Resources and embeddable fonts are supplied explicitly as bytes.
 - Preserve selectable Unicode text and PDF structure; never claim PDF/A or PDF/UA certification without the relevant complete validation.

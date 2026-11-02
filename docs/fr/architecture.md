@@ -39,7 +39,7 @@ vers l’annotation. La hiérarchie ne se déduit pas des pixels dessinés.
 
 Masterminds HTML5, Sabberworm CSS Parser et Symfony CssSelector traitent les
 syntaxes. Les versions stables des modules Core, Fonts, Images et OpenType de
-PDFToolkit assurent objets PDF, shaping et incorporation. Aucun code iText n’est repris.
+PDFToolkit assurent objets PDF, shaping et incorporation.
 
 
 `DeclarationSource` retrouve chaque valeur originale depuis la position fournie

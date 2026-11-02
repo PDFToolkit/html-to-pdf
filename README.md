@@ -6,8 +6,8 @@ An independent, object-oriented **native PHP** HTML/CSS paginator built on the
 PDFToolkit core. It produces selectable Unicode text, embedded TrueType fonts,
 images and a logical PDF structure tree without a browser or JavaScript engine.
 
-Version 0.2 extends the documented native input profile, without claiming all HTML/CSS or
-all iText pdfHTML features. Unsupported features are rejected by default. See
+Version 0.2 extends the documented native input profile. HTML/CSS coverage remains
+partial, and unsupported features are rejected by default. See
 [coverage](docs/coverage.md), [architecture](docs/architecture.md) and
 [examples](examples/README.md). Tagged output is not a PDF/UA or PDF/A certificate. Development follows
 [CSS1 → CSS2 → CSS2.1 → modules](docs/css-levels.md), with explicit qualification gates.
@@ -80,7 +80,6 @@ page renders and validation reports. See [releasing](RELEASING.md).
 
 ## Origins and license
 
-MIT for this implementation. Bundled fonts retain their separate OFL licenses.
-iText pdfHTML is a product listed by the PDF Association; it is a feature
-reference, not a specification or code dependency. Its AGPL/commercial code
-has not been copied or translated. See [primary references](docs/references.md).
+This independent implementation is licensed under MIT and is developed from
+primary HTML/CSS specifications. Bundled fonts retain their separate OFL licenses.
+See [primary references and asset provenance](docs/references.md).

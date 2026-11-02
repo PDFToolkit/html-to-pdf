@@ -6,7 +6,7 @@ Trois illustrations originales accompagnent les descriptions dans un tableau fix
 
 ![Catalogue : images et texte en colonnes](../../examples/previews/catalogue.png)
 
-L’oracle vérifie tout le texte source, trois images incorporées et trois éléments Figure avec leurs descriptions alternatives. Les illustrations géométriques sont originales et ne proviennent pas du comparatif iText.
+L’oracle vérifie tout le texte source, trois images incorporées et trois éléments Figure avec leurs descriptions alternatives. Les illustrations géométriques sont originales et sous licence MIT.
 
 [Source HTML](../../examples/sources/catalogue.html) · [Télécharger le PDF](https://github.com/PDFToolkit/html-to-pdf/releases/download/v0.2.0/catalogue.pdf)
 

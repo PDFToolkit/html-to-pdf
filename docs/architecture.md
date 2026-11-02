@@ -39,7 +39,7 @@ references. The original semantic hierarchy is not inferred from painted pixels.
 
 Masterminds HTML5, Sabberworm CSS Parser and Symfony CssSelector handle language
 syntax. PDFToolkit's stable core, Fonts, Images and OpenType modules handle PDF
-objects, shaping and raster embedding. No iText implementation code is used.
+objects, shaping and raster embedding.
 
 
 `DeclarationSource` reads each original value using the CSS parser's source

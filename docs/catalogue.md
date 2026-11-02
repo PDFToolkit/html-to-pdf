@@ -6,7 +6,7 @@ Three original product illustrations sit beside descriptions in a fixed two-colu
 
 ![Catalogue: images beside wrapped text](../examples/previews/catalogue.png)
 
-The oracle checks all source text, three embedded images and three Figure elements with alternative descriptions. These are original geometric illustrations, not images copied from the iText comparison.
+The oracle checks all source text, three embedded images and three Figure elements with alternative descriptions. These geometric illustrations are original MIT assets.
 
 [HTML source](../examples/sources/catalogue.html) · [PDF download](https://github.com/PDFToolkit/html-to-pdf/releases/download/v0.2.0/catalogue.pdf)
 

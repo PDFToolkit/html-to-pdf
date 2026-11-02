@@ -50,5 +50,5 @@ Première version indépendante en PHP natif de `pdftoolkit/html-to-pdf`.
 
 Il s’agit d’un profil d’entrée expérimental, **pas de CSS1 ou CSS2 complet**.
 La couverture historique CSS2, CSS2.1 et les modules modernes versionnés suivent
-la progression de `docs/fr/css-levels.md`. Aucune certification PDF/A, PDF/UA ou
-équivalence intégrale à iText n’est annoncée.
+la progression de `docs/fr/css-levels.md`. Les certifications PDF/A et PDF/UA
+restent hors du profil validé.

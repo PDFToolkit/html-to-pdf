@@ -7,9 +7,8 @@ fondé sur le cœur PDFToolkit. Il produit du texte Unicode sélectionnable, des
 polices TrueType incorporées, des images et une structure logique PDF sans
 navigateur ni moteur JavaScript.
 
-La version 0.2 étend le profil d’entrée natif documenté, sans revendiquer l’intégralité
-de HTML/CSS ou des fonctions iText pdfHTML. Par défaut, les fonctions absentes sont
-refusées. Consulter la [couverture](docs/fr/coverage.md),
+La version 0.2 étend le profil d’entrée natif documenté. La couverture HTML/CSS
+reste partielle et les fonctions absentes sont refusées par défaut. Consulter la [couverture](docs/fr/coverage.md),
 l’[architecture](docs/fr/architecture.md) et les [exemples](examples/README.fr.md).
 Un PDF balisé ne constitue pas une certification PDF/UA ou PDF/A. Le travail suit
 [CSS1 → CSS2 → CSS2.1 → modules](docs/fr/css-levels.md), avec des critères de qualification explicites.
@@ -83,8 +82,6 @@ Voir la [publication](RELEASING.fr.md).
 
 ## Origine et licence
 
-Implémentation MIT ; les polices fournies conservent leurs licences OFL.
-iText pdfHTML est un produit référencé par la PDF Association : une référence
-fonctionnelle, sans constituer une norme ni une dépendance de code. Son code
-AGPL/commercial n’a pas été copié ou traduit. Voir les
-[références primaires](docs/fr/references.md).
+Cette implémentation indépendante est sous licence MIT et s’appuie sur les
+spécifications primaires HTML/CSS. Les polices fournies conservent leurs licences
+OFL. Voir les [références primaires et la provenance des ressources](docs/fr/references.md).
