@@ -1,0 +1,8 @@
+{
+  "name": "pdftoolkit-html-to-pdf-validation",
+  "private": true,
+  "description": "Independent browser CSS oracle for native PHP HTML-to-PDF",
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
+}

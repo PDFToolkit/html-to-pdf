@@ -25,12 +25,12 @@ final class ConverterTest extends TestCase
 {
     private function fonts(): FontSet
     {
-        return new FontSet(new FontFace(file_get_contents(__DIR__.'/Fixtures/fonts/NotoSans-Regular.ttf')));
+        return new FontSet(new FontFace(file_get_contents(__DIR__ . '/Fixtures/fonts/NotoSans-Regular.ttf')));
     }
 
     private function source(string $body, string $css = ''): HtmlSource
     {
-        return new HtmlSource('<!doctype html><html lang="fr"><head><title>Épreuve</title></head><body>'.$body.'</body></html>', $css);
+        return new HtmlSource('<!doctype html><html lang="fr"><head><title>Épreuve</title></head><body>' . $body . '</body></html>', $css);
     }
 
     public function testThePublicFacadeProducesOneInspectibleTaggedDocument(): void
