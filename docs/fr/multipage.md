@@ -8,7 +8,7 @@ Un document de quatre pages combine paragraphes, liste numérotée, trente ligne
 
 L’oracle vérifie les trente références, 31 éléments TR logiques en comptant l’en-tête, trois TH logiques et la conclusion sur la dernière page. Chaque page est rendue et contrôlée pour repérer coupures et pages blanches inattendues.
 
-[Source HTML](../../examples/sources/multipage.html) · [Télécharger le PDF](https://github.com/PDFToolkit/html-to-pdf/releases/download/v0.1.0/multipage.pdf)
+[Source HTML](../../examples/sources/multipage.html) · [Télécharger le PDF](https://github.com/PDFToolkit/html-to-pdf/releases/download/v0.2.0/multipage.pdf)
 
 ```sh
 php -d memory_limit=512M examples/generate.php _build/examples

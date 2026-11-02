@@ -2,7 +2,7 @@
 
 [Français](fr/css-levels.md)
 
-Version 0.1 is an **incomplete native HTML/CSS-to-PDF foundation**. It does not claim complete CSS1, CSS2, CSS 2.1, or “CSS3” support. Accepting a property name is not evidence that all its values, applicable elements, inherited states, layout interactions and error rules work.
+Version 0.2 is an **incomplete native HTML/CSS-to-PDF foundation**. It does not claim complete CSS1, CSS2, CSS 2.1, or “CSS3” support. Accepting a property name is not evidence that all its values, applicable elements, inherited states, layout interactions and error rules work.
 
 The work proceeds in this order:
 
@@ -13,7 +13,7 @@ The work proceeds in this order:
 
 This is an implementation and review order, not a request to reproduce obsolete errors. The historical [CSS1 recommendation](https://www.w3.org/TR/2008/REC-CSS1-20080411/) and [CSS2 recommendation](https://www.w3.org/TR/2008/REC-CSS2-20080411/) direct implementers to the corrected shared definitions in CSS 2.1. The [CSS 2.1 recommendation](https://www.w3.org/TR/2011/REC-CSS2-20110607/) replaces CSS2, while identifying changed and removed features. The [CSS Snapshot 2025](https://www.w3.org/TR/2025/NOTE-css-2025-20250918/) groups the independently developed later specifications; it does not replace their individual requirements.
 
-The machine-readable [coverage registry](../resources/css-coverage.json) currently inventories **53 CSS1 property names and nine behavior groups**. Its 62 entries contain 36 `partial` and 26 `unsupported` states; none is fully qualified. The property-name inventory is complete. The value/context qualification is not. CSS2, CSS 2.1 and the later module inventories remain incomplete, and every stage has `claimedComplete: false`.
+The machine-readable [coverage registry](../resources/css-coverage.json) currently inventories **53 CSS1 property names and nine behavior groups**. Its 62 entries contain 45 `partial` and 17 `unsupported` states; none is fully qualified. The property-name inventory is complete. The value/context qualification is not. CSS2, CSS 2.1 and the later module inventories remain incomplete, and every stage has `claimedComplete: false`.
 
 An entry has a stable identifier, a normative reference, a scope note and real test paths. Property entries also include one witness value and an HTML context. `partial` means that a documented subset exists; `unsupported` means that the recorded feature is absent. A future `implemented` entry still needs independent qualification. `validated` is reserved for a qualified requirement, including its values and contexts. Updating a label cannot qualify a level by itself.
 
@@ -34,8 +34,18 @@ A release that intends to claim a complete stage must use the additional gate:
 python3 tools/check_css_coverage.py --require-stage css1 --report _build/css1-gate.json
 ```
 
-For version 0.1, **exit code 1 and `status: "incomplete"` are the expected result**. Normal builds may publish the honestly described partial foundation; they must not treat that publication as CSS1 completion. The stage gate is mandatory when making that completion claim, not an optional way to suppress a failed conformance check.
+For version 0.2, **exit code 1 and `status: "incomplete"` are the expected result**. Normal builds may publish the honestly described partial foundation; they must not treat that publication as CSS1 completion. The stage gate is mandatory when making that completion claim, not an optional way to suppress a failed conformance check.
 
 The checker rejects duplicate identities, missing or replaced CSS1 properties, unknown states, missing test files, paths outside the repository and premature completion claims. Claiming completion requires a complete, nonempty inventory, all requirements `validated`, a hash-matched full-stage receipt with complete value/context coverage, and completion of every preceding stage. A parser-witness receipt is explicitly insufficient. The [negative gate tests](../tools/test_css_coverage.py) exercise those distinctions, including the real nonzero CLI exit for incomplete CSS1.
 
 Future qualification must expand each property into its values and contexts, include valid and invalid inputs, inheritance and shorthand interactions, compare independent layout/rendering evidence, and retain exact-version receipts. For example, supporting `margin-top: 6pt` with positive margin collapsing does not establish negative, percentage or `auto` margins; accepting a solid box background does not establish root/body canvas propagation; supplying four font variants does not establish CSS family matching. These gaps remain visible in the registry until their corresponding work and validation are complete.
+
+
+The 0.2 milestone addresses original-value validation, ordered explicit imports,
+selected syntax recovery, escaped selectors and independent border sides; the
+[CSS1 example](css1.md) makes the border subset visible. The next CSS1 work should
+focus on text and fonts: family/variant selection, the font shorthand, spacing,
+indentation and transformation, followed by independent layout and text-output
+witnesses. Floats, remaining box contexts and canvas behavior still need their
+own work before any complete-stage claim. Release qualification records the
+exact candidate; inventory counts are not a substitute for its receipts.

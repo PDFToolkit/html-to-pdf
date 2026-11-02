@@ -7,17 +7,23 @@ fondé sur le cœur PDFToolkit. Il produit du texte Unicode sélectionnable, des
 polices TrueType incorporées, des images et une structure logique PDF sans
 navigateur ni moteur JavaScript.
 
-Cette première version implémente un profil d’entrée documenté, pas l’intégralité
+La version 0.2 étend le profil d’entrée natif documenté, sans revendiquer l’intégralité
 de HTML/CSS ou des fonctions iText pdfHTML. Par défaut, les fonctions absentes sont
 refusées. Consulter la [couverture](docs/fr/coverage.md),
 l’[architecture](docs/fr/architecture.md) et les [exemples](examples/README.fr.md).
 Un PDF balisé ne constitue pas une certification PDF/UA ou PDF/A. Le travail suit
 [CSS1 → CSS2 → CSS2.1 → modules](docs/fr/css-levels.md), avec des critères de qualification explicites.
 
+L’[exemple CSS1](docs/fr/css1.md) montre des côtés de bordure indépendants et huit
+styles visibles. Cette version valide aussi les déclarations originales avant
+la cascade, traite `@import` dans le seul catalogue fourni et récupère certaines
+erreurs syntaxiques en mode Report. Le registre compte 45 exigences partielles
+et 17 absentes ; **CSS1 complet reste non qualifié**.
+
 ## Installation
 
 ```sh
-composer require pdftoolkit/html-to-pdf:^0.1
+composer require pdftoolkit/html-to-pdf:^0.2
 ```
 
 PHP 8.3+ sur une architecture 64 bits, DOM et mbstring sont nécessaires.

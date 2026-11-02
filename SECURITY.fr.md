@@ -17,7 +17,12 @@ ne lance aucun programme externe et n’exécute aucun JavaScript.
 Les clés de `ResourceCatalog` sont des identifiants exacts, sensibles à la casse.
 Une clé ressemblant à une URL, un chemin relatif ou une chaîne `data:` ne
 déclenche aucun téléchargement ni lecture de fichier : images et feuilles de
-style liées doivent déjà être présentes dans le catalogue.
+style liées ou importées doivent déjà être présentes dans le catalogue.
+`HtmlSource::baseUri` et l’URI de chaque feuille importée servent uniquement à
+résoudre leurs identifiants ; elles n’autorisent aucun accès aux destinations.
+Les imports ont des limites cumulées de nombre, profondeur et octets, et les
+cycles actifs sont diagnostiqués. Un encodage de feuille inconnu ne peut pas
+déclencher de transcodage.
 
 Les lectures de fichiers, téléchargements et écritures de PDF du code
 d’intégration restent sous la responsabilité de l’application. Appliquer ses
@@ -40,7 +45,9 @@ texte, les pages, les commandes de dessin, les ressources et la sortie. Le
 défaut. Chaque conversion possède ses compteurs de travail. Le budget du
 catalogue comprend aussi les images et feuilles de style inutilisées. Le moteur
 de rendu vérifie également les octets cumulés des polices/images et les pixels
-des images employés dans la sortie.
+des images employés dans la sortie. Les bordures en pointillés ou tirets
+consomment aussi un budget cumulé de motifs avant la sortie, fragments compris ;
+une largeur minuscule ne peut pas imposer un travail illimité au lecteur PDF.
 
 `ImageAsset` vérifie les octets encodés et les dimensions avant incorporation.
 `FontLimits` borne séparément les octets de chaque police, les enregistrements

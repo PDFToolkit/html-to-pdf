@@ -8,7 +8,7 @@ A one-page French invoice with accented text, genuine bold faces, colored sectio
 
 The independent oracle checks the amount 480,00 €, source text order, embedded fonts, the three column headers and the URI annotation/OBJR. The illustration is fictitious and has no commercial value.
 
-[HTML source](../examples/sources/invoice.html) · [PDF download](https://github.com/PDFToolkit/html-to-pdf/releases/download/v0.1.0/invoice.pdf)
+[HTML source](../examples/sources/invoice.html) · [PDF download](https://github.com/PDFToolkit/html-to-pdf/releases/download/v0.2.0/invoice.pdf)
 
 ```sh
 php -d memory_limit=512M examples/generate.php _build/examples

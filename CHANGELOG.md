@@ -2,6 +2,30 @@
 
 [English](CHANGELOG.md) · [Français](CHANGELOG.fr.md)
 
+## 0.2.0 — 2026-11-02
+
+See the release assets for exact-candidate PHP, PDF and browser validation
+receipts; the CSS1 completion gate remains incomplete.
+
+- Validate original declaration values before the author cascade; preserve valid
+  earlier values and reject malformed shorthands atomically. Clip original RGB
+  components without trusting a parser's normalized serialization.
+  Accept explicit positive RGB signs without changing source offsets, and reject
+  unsupported or misplaced encoding directives before they change parser state.
+- Recover selected syntax errors in Report mode while keeping Reject strict;
+  validate whole selector lists, support escaped selector identifiers, and bound
+  selector-tree depth. Escaped declaration values remain unsupported.
+- Resolve ordered `@import` only against explicitly supplied stylesheet bytes,
+  with optional `HtmlSource::baseUri`, cycle diagnostics and cumulative import,
+  depth and CSS-byte limits. No implicit network or filesystem access.
+- Add independent border sides, eight visible styles plus none, shorthand reset
+  and inheritance, transparent geometry and fragment-aware artifact painting.
+  Inline border decorations and collapsed table borders remain unsupported.
+- Add an original CSS1 visual example and update bilingual guides. The registry
+  now records 45 partial and 17 unsupported requirements, with no full CSS1 claim.
+- Preserve the legacy uniform `ComputedStyle` constructor; compiled borderWidth
+  and borderColor are top-side projections. Use borderEdges() for independent sides.
+
 ## 0.1.0 — 2026-11-02
 
 First independent native PHP release of `pdftoolkit/html-to-pdf`.

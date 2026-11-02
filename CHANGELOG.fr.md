@@ -2,6 +2,30 @@
 
 [English](CHANGELOG.md) · [Français](CHANGELOG.fr.md)
 
+## 0.2.0 — 2026-11-02
+
+Les artefacts de release conservent les reçus PHP, PDF et navigateurs du candidat
+exact ; le contrôle d’achèvement CSS1 reste incomplet.
+
+- Validation des valeurs originales avant cascade auteur : conservation des
+  valeurs valides précédentes et refus atomique des raccourcis malformés. Bornage
+  des composantes RGB originales sans dépendre d’une sérialisation normalisée.
+  Signes positifs RGB acceptés sans changer les positions de source ; directives
+  d’encodage non prises en charge ou mal placées refusées avant de modifier l’état du parseur.
+- Récupération de certaines erreurs syntaxiques en Report, Reject restant strict ;
+  listes de sélecteurs atomiques, identifiants échappés et profondeur d’arbre bornée.
+  Les valeurs de déclaration échappées restent absentes.
+- Résolution ordonnée de `@import` dans les seuls octets CSS fournis, avec
+  `HtmlSource::baseUri` facultatif, diagnostics de cycles et limites cumulées de
+  nombre, profondeur et octets. Aucun accès réseau ou fichier implicite.
+- Côtés de bordure indépendants, huit styles visibles plus none, réinitialisation
+  des raccourcis, héritage, géométrie transparente et rendu en artefacts fragmentés.
+  Bordures inline et bordures fusionnées de tableau encore absentes.
+- Exemple visuel CSS1 original et guides bilingues à jour. Le registre compte
+  désormais 45 exigences partielles et 17 absentes, sans annoncer CSS1 complet.
+- Constructeur uniforme historique de ComputedStyle conservé ; borderWidth et
+  borderColor compilés projettent le côté haut. borderEdges() expose tous les côtés.
+
 ## 0.1.0 — 2026-11-02
 
 Première version indépendante en PHP natif de `pdftoolkit/html-to-pdf`.

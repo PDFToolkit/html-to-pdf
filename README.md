@@ -6,16 +6,22 @@ An independent, object-oriented **native PHP** HTML/CSS paginator built on the
 PDFToolkit core. It produces selectable Unicode text, embedded TrueType fonts,
 images and a logical PDF structure tree without a browser or JavaScript engine.
 
-This first release implements a documented input profile, not all HTML/CSS or
+Version 0.2 extends the documented native input profile, without claiming all HTML/CSS or
 all iText pdfHTML features. Unsupported features are rejected by default. See
 [coverage](docs/coverage.md), [architecture](docs/architecture.md) and
 [examples](examples/README.md). Tagged output is not a PDF/UA or PDF/A certificate. Development follows
 [CSS1 → CSS2 → CSS2.1 → modules](docs/css-levels.md), with explicit qualification gates.
 
+The [CSS1 example](docs/css1.md) shows independent border sides and eight visible
+border styles. This release also validates original declarations before the
+cascade, supports bounded catalog-only `@import`, and recovers selected syntax
+errors in Report mode. The registry records 45 partial and 17 unsupported
+requirements; **complete CSS1 remains unqualified**.
+
 ## Install
 
 ```sh
-composer require pdftoolkit/html-to-pdf:^0.1
+composer require pdftoolkit/html-to-pdf:^0.2
 ```
 
 PHP 8.3+ on a 64-bit runtime is required, as are DOM and mbstring. `php-64bit`

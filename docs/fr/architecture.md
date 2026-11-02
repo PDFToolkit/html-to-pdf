@@ -22,7 +22,7 @@ flowchart LR
 | `Model`, `Style` | Identités, contenu et valeurs calculées immuables, indépendants des objets PDF. |
 | `Font` | Polices TrueType statiques explicites, shaping GSUB/GPOS, métriques et variantes. |
 | `Layout` | Largeurs, lignes, fragmentation, positions et identités sémantiques. |
-| `Drawing` | Commandes typées de texte, image et rectangle en points depuis le coin supérieur gauche. |
+| `Drawing` | Commandes typées de texte, image, rectangle et boîte de bordures en points depuis le coin supérieur gauche. |
 | `Rendering` | Incorporations de polices propres au document, contenu balisé, arbres de structure/parents, images et liens via le cœur PDF. |
 | `Resource` | Recherche exacte dans le catalogue fourni et budgets cumulés. |
 
@@ -40,6 +40,26 @@ vers l’annotation. La hiérarchie ne se déduit pas des pixels dessinés.
 Masterminds HTML5, Sabberworm CSS Parser et Symfony CssSelector traitent les
 syntaxes. Les versions stables des modules Core, Fonts, Images et OpenType de
 PDFToolkit assurent objets PDF, shaping et incorporation. Aucun code iText n’est repris.
+
+
+`DeclarationSource` retrouve chaque valeur originale depuis la position fournie
+par le parseur CSS et un index UTF-8 borné. `Declarations` la valide et développe
+ses raccourcis intégralement avant que `Cascade` applique importance, spécificité
+et ordre : la sérialisation du parseur ne peut transformer un nombre malformé en
+couleur valide. `SelectorPolicy` inspecte les nœuds des sélecteurs et borne leur
+profondeur avant traduction XPath. Toute la liste doit être valide avant effet.
+
+Les imports du catalogue appartiennent au document. `CatalogUri` résout les
+identités sans I/O ; le suivi du chemin actif repère les cycles sans supprimer
+un nouvel import légitime plus tard. `ParseBudget` compte chaque occurrence
+analysée, import et sélecteur. La récupération Report conserve budgets et diagnostics.
+
+`BorderComputer` produit un `Borders` immuable contenant quatre `BorderSide`.
+La mise en page utilise leur largeur effective ; `Drawing\BorderBox` et
+`Rendering\BorderPainter` conservent la géométrie de la boîte complète lors du
+rendu des fragments de pages. Les bordures restent des artefacts. Les anciens
+paramètres uniformes restent utilisables ; les nouvelles intégrations doivent
+inspecter `ComputedStyle::borderEdges()`.
 
 Chaque extension doit apporter valeurs typées, algorithme borné, tests négatifs
 et preuve observable indépendante avant de modifier la matrice de couverture.

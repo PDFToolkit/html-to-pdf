@@ -8,7 +8,7 @@ Three original product illustrations sit beside descriptions in a fixed two-colu
 
 The oracle checks all source text, three embedded images and three Figure elements with alternative descriptions. These are original geometric illustrations, not images copied from the iText comparison.
 
-[HTML source](../examples/sources/catalogue.html) · [PDF download](https://github.com/PDFToolkit/html-to-pdf/releases/download/v0.1.0/catalogue.pdf)
+[HTML source](../examples/sources/catalogue.html) · [PDF download](https://github.com/PDFToolkit/html-to-pdf/releases/download/v0.2.0/catalogue.pdf)
 
 ```sh
 php -d memory_limit=512M examples/generate.php _build/examples

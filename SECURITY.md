@@ -14,7 +14,11 @@ The conversion pipeline does not fetch network resources, resolve filesystem
 paths, discover system fonts, launch external programs or execute JavaScript.
 `ResourceCatalog` keys are exact, case-sensitive identifiers. URL-shaped keys,
 relative paths and `data:` strings do not trigger a download or file read;
-images and linked stylesheets must already be present in the catalog.
+images, linked stylesheets and imported stylesheets must already be present in
+the catalog. `HtmlSource::baseUri` and each imported sheet's URI only resolve
+stylesheet identities; they do not authorize access to those destinations.
+Imports have cumulative count, depth and byte limits, and active cycles are
+diagnosed. Unrecognized stylesheet encodings cannot trigger transcoding.
 
 File reads, downloads and PDF writes in an application's integration code remain
 that application's responsibility. Apply its authorization and input limits
@@ -34,7 +38,9 @@ profile; this is not an HTML sanitization API.
 commands, resources and output. The full defaults are listed in the
 [usage guide](docs/usage.md#limits). Each conversion has its own work counters.
 Catalog accounting includes unused images and stylesheets. The renderer also
-checks cumulative font/image bytes and image pixels used by the output.
+checks cumulative font/image bytes and image pixels used by the output. Dotted
+and dashed borders also consume a cumulative pattern-work budget before output,
+including fragments; tiny widths cannot create unlimited viewer work.
 
 `ImageAsset` checks encoded bytes and dimensions before embedding.
 `FontLimits` independently bounds each font's bytes, layout records, shaping
