@@ -4,6 +4,29 @@
 
 ## Non publié
 
+## 0.3.0 — 2026-11-02
+
+- Ajouter les flottants gauche/droite à largeur explicite, contextes d’exclusion
+  imbriqués et dégagement, avec budgets cumulés et refus des fragmentations,
+  combinaisons avec tableaux et fusions parent-enfant des marges non prises en charge.
+  Un document à flottants visibles doit tenir sur une page ; le débordement visible
+  d’une hauteur fixe conserve son étendue peinte.
+- Ajouter listes CSS de familles, noms/génériques explicitement associés et
+  développement atomique du raccourci `font` pris en charge. Variantes/glyphes
+  absents restent explicites, sans recherche système ni remplacement par caractère.
+  Conserver les interlignes spécifiés.
+- Accepter les métadonnées Strict historiques reconnues, nœuds de listes de
+  définitions, fonds html/body et liens d’annotation relatifs avec base explicite.
+  Refuser les découpages inline/bloc qui perdraient une portée de lien ou de langue.
+- Ajouter des instantanés radio explicites avec états coché/désactivé et attributs
+  logiques Form/PrintField, sans champ PDF interactif, envoi ou JavaScript.
+  Styles/types de contrôle absents restent des diagnostics ou erreurs explicites.
+- Conserver HTML et GIF historiques boîtes/flottants/dégagement sans modification,
+  avec empreintes et notices BSD. Ajouter générateur natif, témoins géométriques
+  navigateur, contrôles indépendants PDF/texte/couleurs et tests négatifs des oracles.
+- Actualiser guides FR/EN et registre : 49 exigences partielles, 13 absentes.
+  Aucune qualification CSS1 complète, PDF/A ou PDF/UA n’est annoncée.
+
 ## 0.2.2 — 2026-11-02
 
 - Présenter le convertisseur natif à partir des spécifications primaires HTML/CSS, de sa couverture implémentée et des preuves de validation. Harmoniser les guides FR/EN et les règles de contribution.

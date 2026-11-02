@@ -4,6 +4,27 @@
 
 ## Unreleased
 
+## 0.3.0 — 2026-11-02
+
+- Add explicit-width left/right floats, nested exclusion contexts and clearance,
+  with cumulative work limits and explicit rejection of unsupported fragmentation,
+  table combinations and parent-child margin collapse. A document with visible
+  floats must fit on one page; fixed-height visible overflow retains its paint extent.
+- Add ordered CSS family lists, caller-supplied named/generic font bindings and
+  atomic supported `font` shorthand expansion. Keep missing variants/glyphs explicit;
+  no system lookup or per-character fallback. Preserve specified line heights.
+- Accept recognized legacy Strict doctype metadata, definition-list source nodes,
+  root/body canvas backgrounds and relative annotation links with an explicit base.
+  Reject inline/block splitting that would discard a link or language scope.
+- Add opt-in static radio snapshots with checked/disabled state and logical
+  Form/PrintField attributes; no interactive PDF fields, submission or JavaScript.
+  Unsupported control styles/types remain explicit diagnostics or errors.
+- Preserve the historical box/float/clear HTML and reference GIF unchanged with
+  source hashes and BSD notices. Add a native generator, browser geometry witnesses,
+  independent PDF/text/color-mask checks and negative oracle controls.
+- Update English/French documentation and the registry: 49 partial, 13 unsupported
+  requirements. No complete CSS1, PDF/A or PDF/UA qualification is claimed.
+
 ## 0.2.2 — 2026-11-02
 
 - Describe the native converter through primary HTML/CSS specifications, its implemented coverage and validation evidence. Keep the English/French guides and contributor policy consistent.

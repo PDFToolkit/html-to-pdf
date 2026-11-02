@@ -20,9 +20,9 @@ flowchart LR
 |---|---|
 | `Parsing`, `Css` | Borner l’entrée, analyser HTML5/CSS, calculer la cascade et les styles typés. |
 | `Model`, `Style` | Identités, contenu et valeurs calculées immuables, indépendants des objets PDF. |
-| `Font` | Polices TrueType statiques explicites, shaping GSUB/GPOS, métriques et variantes. |
+| `Font` | Polices TrueType statiques explicites, catalogue de familles, shaping GSUB/GPOS, métriques et variantes. |
 | `Layout` | Largeurs, lignes, fragmentation, positions et identités sémantiques. |
-| `Drawing` | Commandes typées de texte, image, rectangle et boîte de bordures en points depuis le coin supérieur gauche. |
+| `Drawing` | Commandes typées de texte, image, rectangle, boîte de bordures et radio statique en points depuis le coin supérieur gauche. |
 | `Rendering` | Incorporations de polices propres au document, contenu balisé, arbres de structure/parents, images et liens via le cœur PDF. |
 | `Resource` | Recherche exacte dans le catalogue fourni et budgets cumulés. |
 
@@ -64,3 +64,17 @@ inspecter `ComputedStyle::borderEdges()`.
 Chaque extension doit apporter valeurs typées, algorithme borné, tests négatifs
 et preuve observable indépendante avant de modifier la matrice de couverture.
 Une option de rendu ne remplace pas un algorithme de mise en page absent.
+
+`FontCatalog` résout les listes immuables de familles uniquement dans les noms
+et génériques fournis par l’appelant. `FontDeclarations` développe le raccourci
+pris en charge avant cascade ; `InlineFormatter` mesure et peint avec cette police.
+`FloatContext`, `LineExclusions` et un `FloatWorkBudget` partagé bornent placement
+et exclusion des lignes. `FlowItem::paintHeight` sépare étendue visible et hauteur
+de flux ; les documents à flottants sont réunis en un contexte indivisible d’une page.
+
+`HtmlDoctypeProjection` reconnaît les métadonnées Strict historiques prises en
+charge sans télécharger de DTD. `HtmlDocument::canvasBackground` sépare fond de
+page et décoration du body. Le dessin explicite `RadioButton` devient opérateurs
+vectoriels et attributs logiques Form/PrintField, sans champ PDF ni action. Les
+oracles indépendants navigateur/PDF du cas historique n’importent pas le modèle
+de mise en page PHP.

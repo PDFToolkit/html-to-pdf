@@ -6,22 +6,23 @@ An independent, object-oriented **native PHP** HTML/CSS paginator built on the
 PDFToolkit core. It produces selectable Unicode text, embedded TrueType fonts,
 images and a logical PDF structure tree without a browser or JavaScript engine.
 
-Version 0.2 extends the documented native input profile. HTML/CSS coverage remains
+Version 0.3 extends the documented native input profile. HTML/CSS coverage remains
 partial, and unsupported features are rejected by default. See
 [coverage](docs/coverage.md), [architecture](docs/architecture.md) and
 [examples](examples/README.md). Tagged output is not a PDF/UA or PDF/A certificate. Development follows
 [CSS1 → CSS2 → CSS2.1 → modules](docs/css-levels.md), with explicit qualification gates.
 
-The [CSS1 example](docs/css1.md) shows independent border sides and eight visible
-border styles. This release also validates original declarations before the
-cascade, supports bounded catalog-only `@import`, and recovers selected syntax
-errors in Report mode. The registry records 45 partial and 17 unsupported
-requirements; **complete CSS1 remains unqualified**.
+Version 0.3 adds bounded left/right floats and clearance, explicit CSS font
+families and the supported `font` shorthand, plus page-canvas backgrounds. The
+[CSS1 examples](docs/css1.md) include the unchanged historical box/float/clear
+source and its native PDF rendering. Radio controls require an explicit static
+snapshot option. The registry records 49 partial and 13 unsupported requirements;
+**complete CSS1 remains unqualified**.
 
 ## Install
 
 ```sh
-composer require pdftoolkit/html-to-pdf:^0.2
+composer require pdftoolkit/html-to-pdf:^0.3
 ```
 
 The core is installed under its canonical Composer name `pdftoolkit/pdf:^0.12.2`.
@@ -81,5 +82,6 @@ page renders and validation reports. See [releasing](RELEASING.md).
 ## Origins and license
 
 This independent implementation is licensed under MIT and is developed from
-primary HTML/CSS specifications. Bundled fonts retain their separate OFL licenses.
+primary HTML/CSS specifications. Bundled fonts retain their separate OFL licenses;
+the unchanged historical W3C fixture retains its BSD notice.
 See [primary references and asset provenance](docs/references.md).

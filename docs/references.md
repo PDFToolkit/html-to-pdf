@@ -27,3 +27,10 @@ The generated fixture illustrations are original MIT assets. The example Lato
 fonts retain the OFL-1.1 notice under `examples/assets/fonts/LICENCE.txt`; the
 Noto Sans test face retains its OFL notice under `tests/Fixtures/fonts/OFL.txt`.
 Published PDFToolkit test image provenance is recorded alongside the fixtures.
+
+The historical `test5526c.htm` and `sec5526c.gif` are unmodified development
+fixtures under the W3C BSD licensing option. Their [notice](../resources/css1/w3c/NOTICE)
+and [manifest](../resources/css1/w3c/provenance.json) retain source URLs, retrieval
+date, exact hashes and licensing references. The GIF includes historical browser
+chrome; it is not a full-image pixel oracle. Selected regression evidence does
+not assert conformance for the full W3C suite or imply endorsement.

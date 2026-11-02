@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "0.2.0",
+  "packageVersion": "0.3.0",
   "activeStage": "css1",
   "stageOrder": [
     "css1",
@@ -45,12 +45,14 @@
       "name": "font-family",
       "section": "5.2.2",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#font-family",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "serif",
       "context": "div",
-      "note": "Explicit FontSet only; CSS family matching and fallback chains are absent.",
+      "note": "Ordered named/generic families resolved against explicit FontCatalog bindings; no system lookup or per-character fallback. Complete CSS1 matching remains unqualified.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/FontDeclarationsTest.php",
+        "tests/Font/FontCatalogTest.php"
       ]
     },
     {
@@ -115,12 +117,13 @@
       "name": "font",
       "section": "5.2.7",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#font",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "italic 12pt serif",
       "context": "div",
-      "note": "The font shorthand is not implemented.",
+      "note": "Atomic supported font shorthand with size, optional line height and family list; omitted components reset. Small caps, size/system keywords and relative weight matching remain unsupported.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/FontDeclarationsTest.php"
       ]
     },
     {
@@ -149,7 +152,7 @@
       "status": "partial",
       "sample": "#e7eff4",
       "context": "div",
-      "note": "Solid/transparent box backgrounds; canvas propagation remains unqualified.",
+      "note": "Solid/transparent box backgrounds and selected root/body canvas propagation; full contexts remain unqualified.",
       "tests": [
         "tests/Css/Css1RegistryTest.php",
         "tests/Css/ValuesTest.php",
@@ -706,7 +709,7 @@
       "status": "partial",
       "sample": "30pt",
       "context": "div",
-      "note": "Explicit non-percentage heights; overflow is rejected.",
+      "note": "Explicit non-percentage heights; visible overflow is retained in bounded float contexts, while ordinary-flow overflow remains rejected.",
       "tests": [
         "tests/Css/Css1RegistryTest.php"
       ]
@@ -717,12 +720,16 @@
       "name": "float",
       "section": "5.5.25",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#float",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "left",
       "context": "div",
-      "note": "Float placement and exclusion areas are absent.",
+      "note": "Explicit-width left/right placement, nested contexts and line exclusions within a one-page document. No intrinsic sizing, table combinations or float fragmentation. Decorated normal blocks overlapping earlier floats and floats introduced after inline text on the same line are rejected.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Layout/FloatContextTest.php",
+        "tests/Layout/FloatingLayoutTest.php",
+        "tools/validate_w3c_css1.cjs",
+        "tools/validate_w3c_css1.py"
       ]
     },
     {
@@ -731,12 +738,15 @@
       "name": "clear",
       "section": "5.5.26",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#clear",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "both",
       "context": "div",
-      "note": "Float clearance is absent.",
+      "note": "Left/right/both clearance in bounded one-page float contexts; complete margin-collapse and fragmentation interactions remain unqualified.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Layout/FloatContextTest.php",
+        "tests/Layout/FloatingLayoutTest.php",
+        "tools/validate_w3c_css1.py"
       ]
     },
     {
@@ -748,7 +758,7 @@
       "status": "partial",
       "sample": "block",
       "context": "div",
-      "note": "Native block/inline/list elements; arbitrary display remapping remains unqualified.",
+      "note": "Native block/inline/list elements, float blockification and list-marker suppression with display:block; arbitrary display remapping remains unqualified.",
       "tests": [
         "tests/Css/Css1RegistryTest.php"
       ]
@@ -868,9 +878,11 @@
       "name": "formatting",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
       "status": "partial",
-      "note": "Positive block margins and native line boxes exist; float, negative margins and inline edge cases prevent full qualification.",
+      "note": "Positive margins, specified line heights, explicit-width floats and clearance have bounded witnesses. Negative margins, parent-child collapse with floats, intrinsic float widths and fragmentation remain unqualified.",
       "tests": [
-        "tests/Layout/LayoutEngineTest.php"
+        "tests/Layout/LayoutEngineTest.php",
+        "tests/Layout/FloatingLayoutTest.php",
+        "tests/Layout/InlineFormattingTest.php"
       ]
     },
     {
@@ -879,9 +891,10 @@
       "name": "font-matching",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
       "status": "unsupported",
-      "note": "Explicit variants are an API capability, not CSS1 font-family matching.",
+      "note": "Complete CSS1 font matching, per-character fallback and weight repertoire are absent; explicit ordered family/generic bindings are covered as a partial font-family property.",
       "tests": [
-        "tests/Font/FontFaceTest.php"
+        "tests/Font/FontFaceTest.php",
+        "tests/Font/FontCatalogTest.php"
       ]
     },
     {
@@ -928,9 +941,11 @@
       "name": "canvas",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
       "status": "partial",
-      "note": "Box backgrounds exist; root/body canvas background propagation is not yet qualified.",
+      "note": "Solid root backgrounds and transparent-root body propagation are covered by selected parser/native raster witnesses; the full canvas/background requirement is not qualified.",
       "tests": [
-        "tests/Layout/LayoutEngineTest.php"
+        "tests/Layout/LayoutEngineTest.php",
+        "tests/Parsing/StaticDocumentTest.php",
+        "tools/validate_w3c_css1.py"
       ]
     }
   ]

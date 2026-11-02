@@ -39,10 +39,11 @@ never performs HTTP, filesystem or `data:` loading. Repeated image uses share
 their PDF embedding. `alt=""` explicitly marks an image decorative; provide
 useful alternative text for meaningful figures.
 
-Only absolute ASCII `http`, `https` and `mailto` text links are supported. They
-become PDF URI annotations with structure references and are not followed during
-conversion. Internal destinations, JavaScript actions and form submission are
-outside this release's profile.
+ASCII `http`, `https` and `mailto` text links become PDF URI annotations with
+structure references and are not followed during conversion. Relative targets
+require an explicit `HtmlSource::baseUri`; their fragment stays in the external
+URI. A relative target without a supported base is rejected. Internal destinations,
+JavaScript actions and form submission are outside this release's profile.
 
 ## Stylesheet imports and source identity
 
@@ -66,8 +67,8 @@ $result = (new Converter())->convert($source,
     new ConversionOptions(fonts: $fonts, resources: $resources));
 ```
 
-`HtmlSource::baseUri` is optional and applies to stylesheet references, not image
-keys or PDF link targets. A linked sheet becomes the base for its own imports;
+`HtmlSource::baseUri` is optional and applies to stylesheet references and text
+link targets, not image keys. A linked sheet becomes the base for its own imports;
 embedded `style` and `HtmlSource::stylesheet` use the supplied document base.
 Without a base, relative names address the catalog root. Dot segments are
 normalized, fragments are excluded from stylesheet identity and percent-encoded
@@ -98,6 +99,72 @@ the supplied face or supported profile fails explicitly, even in Report mode.
 Tables require `table-layout: fixed` in strict mode. Choose explicit first-row
 column widths or equal columns. See [coverage](coverage.md) for the precise
 fragmentation, whitespace and box restrictions.
+
+## Explicit font families
+
+CSS `font-family` lists select the first family registered in a `FontCatalog`.
+Named families are case-insensitive; quoted names remain distinct from generic
+keywords. Bind generic families deliberately rather than relying on system fonts:
+
+```php
+use PDF\HtmlToPdf\Font\FontCatalog;
+use PDF\HtmlToPdf\Font\FontFace;
+use PDF\HtmlToPdf\Font\FontSet;
+
+$regular = new FontFace($regularBytes);
+$sans = new FontSet($regular, bold: new FontFace($boldBytes));
+$fonts = new FontSet($regular, catalog: new FontCatalog(
+    families: ['Report Sans' => $sans],
+    genericFamilies: ['sans-serif' => $sans],
+));
+// CSS: font: bold 10px/1.3 "Report Sans", sans-serif;
+```
+
+The default `FontSet` still serves documents without a CSS family declaration.
+An explicit list with no registered match fails. After family selection the
+requested variant and every glyph must exist in that supplied family; there is
+no per-character fallback, synthetic variant or filesystem lookup. The supported
+`font` shorthand expands atomically and resets omitted components. Small caps,
+size keywords, system-font keywords and relative weight matching remain absent.
+
+## Bounded floats and static controls
+
+`float:left/right` requires an explicit width, including supported percentages.
+Nested floats establish their own context; inline text uses the remaining line
+space, and `clear:left/right/both` moves following content below the matching
+floats. **The entire document containing visible floats must fit on one page.**
+There is no float fragmentation, intrinsic float sizing or float/table combination.
+Parent-child margin collapse within float contexts is rejected; explicit border
+or padding can separate those margins. Fixed-height overflow stays visible in
+this profile, while the total painted extent must still fit the page. A normal-flow
+block with a background or border may not overlap an earlier float. A float
+introduced after text on the same inline line is also rejected; these paint-order
+and line-reflow contexts are not implemented.
+
+Root `html` backgrounds paint the page canvas. When that background is transparent,
+the body background is propagated to the canvas instead of painted twice. Body
+box borders and margins retain their own geometry. `dl/dt/dd` remain distinct
+HTML source nodes and project to `Sect/P/Sect` in PDF; this is not a richer
+PDF definition-list model. Plain inline wrappers may split around block children;
+decorations or link/language scopes spanning those blocks are rejected.
+
+Form elements and controls are rejected by default. An explicit static snapshot
+permits radio controls, preserving checked/disabled state as a vector appearance:
+
+```php
+use PDF\HtmlToPdf\FormControls;
+
+$options = new ConversionOptions(
+    fonts: $fonts,
+    formControls: FormControls::StaticSnapshot,
+);
+```
+
+The output contains logical Form/PrintField attributes, but no interactive PDF
+field, submission action or JavaScript. Other control types, custom radio box
+sizes/decorations and block/floating radios are unsupported. Report mode records
+a diagnostic and omits unsupported controls; strict mode rejects them.
+See the [historical CSS1 example](css1.md) for the complete explicit setup.
 
 ## Declaration validation, recovery and borders
 

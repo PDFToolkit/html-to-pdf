@@ -20,9 +20,9 @@ flowchart LR
 |---|---|
 | `Parsing`, `Css` | Bound input, parse HTML5 and CSS, apply cascade and construct typed styles. |
 | `Model`, `Style` | Immutable source identities, content and computed values, independent of PDF objects. |
-| `Font` | Explicit static TrueType faces, GSUB/GPOS shaping, metrics and variant selection. |
+| `Font` | Explicit static TrueType faces, family catalog, GSUB/GPOS shaping, metrics and variant selection. |
 | `Layout` | Widths, line boxes, fragmentation, page positions and semantic identities. |
-| `Drawing` | Typed text, image, rectangle and border-box operations, expressed in PDF points from the top left. |
+| `Drawing` | Typed text, image, rectangle, border-box and static radio operations, expressed in PDF points from the top left. |
 | `Rendering` | Document-local font embeddings, marked content, structure/parent trees, images and links through the PDF core. |
 | `Resource` | Exact caller-provided catalog lookup and cumulative resource budgets. |
 
@@ -63,3 +63,16 @@ usable, while new integrations should inspect `ComputedStyle::borderEdges()`.
 Extensions should add typed values, a bounded algorithm, negative tests and an
 independent observable witness before changing the coverage matrix. A renderer
 option cannot substitute for a missing layout algorithm.
+
+`FontCatalog` resolves immutable family lists only against caller-supplied named
+and generic bindings. `FontDeclarations` expands the supported shorthand before
+cascade; `InlineFormatter` measures and paints through the selected face.
+`FloatContext`, `LineExclusions` and a shared `FloatWorkBudget` bound placement
+and line exclusion. `FlowItem::paintHeight` separates visible extent from normal
+flow height; floated documents are assembled as one indivisible page context.
+
+`HtmlDoctypeProjection` recognizes the supported legacy Strict metadata without
+fetching a DTD. `HtmlDocument::canvasBackground` separates the page canvas from
+body decoration. An opt-in `RadioButton` drawing becomes vector operators and
+logical Form/PrintField attributes, with no PDF field or action. The historical
+fixture's independent browser/PDF oracles do not import the PHP layout model.

@@ -28,3 +28,11 @@ Les illustrations générées sont originales et sous MIT. Les polices Lato des
 exemples conservent la notice OFL-1.1 dans `examples/assets/fonts/LICENCE.txt` ;
 la police de test Noto Sans conserve la sienne dans `tests/Fixtures/fonts/OFL.txt`.
 La provenance des images de test PDFToolkit publiées est conservée avec les fixtures.
+
+Les fichiers historiques `test5526c.htm` et `sec5526c.gif` sont conservés sans
+modification pour les tests de développement sous l’option BSD du W3C. Leur
+[notice](../../resources/css1/w3c/NOTICE) et leur
+[manifeste](../../resources/css1/w3c/provenance.json) gardent URL, date de collecte,
+empreintes exactes et références de licence. Le GIF contient l’interface d’un
+ancien navigateur ; il ne sert pas d’oracle de pixels sur toute l’image. Ces
+preuves ciblées n’annoncent ni conformité à toute la suite W3C ni approbation.

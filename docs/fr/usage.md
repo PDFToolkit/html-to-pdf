@@ -39,9 +39,10 @@ résolution ne charge aucune ressource HTTP, fichier ou `data:`. Les usages rép
 d’une image partagent son incorporation. `alt=""` marque explicitement une image
 décorative ; une figure informative demande une description utile.
 
-Seuls les liens textuels absolus ASCII `http`, `https` et `mailto` sont traités.
-Ils deviennent des annotations URI avec références de structure, sans être suivis
-pendant la conversion. Destinations internes, actions JavaScript et soumission
+Les liens textuels ASCII `http`, `https` et `mailto` deviennent des annotations
+URI avec références de structure, sans être suivis pendant la conversion. Une
+cible relative demande un `HtmlSource::baseUri` explicite ; son fragment reste
+dans l’URI externe. Sans base prise en charge, la cible relative est refusée. Destinations internes, actions JavaScript et soumission
 de formulaires sont hors profil.
 
 ## Imports et identité des feuilles CSS
@@ -66,8 +67,8 @@ $result = (new Converter())->convert($source,
     new ConversionOptions(fonts: $fonts, resources: $resources));
 ```
 
-`HtmlSource::baseUri` est facultatif et concerne les références CSS, pas les clés
-d’images ni les cibles de liens PDF. Une feuille liée devient la base de ses
+`HtmlSource::baseUri` est facultatif et concerne les références CSS et les cibles
+de liens textuels, pas les clés d’images. Une feuille liée devient la base de ses
 propres imports ; `style` intégré et `HtmlSource::stylesheet` utilisent la base du
 document fournie. Sans base, les noms relatifs désignent la racine du catalogue.
 Les segments pointés sont normalisés, les fragments exclus de l’identité CSS et
@@ -100,6 +101,73 @@ explicitement, même en mode Report.
 Les tableaux demandent `table-layout: fixed` en mode strict. Définir les largeurs
 dans la première ligne ou utiliser des colonnes égales. La [couverture](coverage.md)
 précise les restrictions de fragmentation, espaces et boîtes.
+
+## Familles de polices explicites
+
+Les listes CSS `font-family` choisissent la première famille enregistrée dans un
+`FontCatalog`. Les noms sont insensibles à la casse ; un nom entre guillemets
+reste distinct d’un mot-clé générique. Associer les génériques volontairement :
+
+```php
+use PDF\HtmlToPdf\Font\FontCatalog;
+use PDF\HtmlToPdf\Font\FontFace;
+use PDF\HtmlToPdf\Font\FontSet;
+
+$regular = new FontFace($regularBytes);
+$sans = new FontSet($regular, bold: new FontFace($boldBytes));
+$fonts = new FontSet($regular, catalog: new FontCatalog(
+    families: ['Report Sans' => $sans],
+    genericFamilies: ['sans-serif' => $sans],
+));
+// CSS : font: bold 10px/1.3 "Report Sans", sans-serif;
+```
+
+Le `FontSet` par défaut sert toujours les documents sans déclaration CSS de
+famille. Une liste explicite sans correspondance enregistrée échoue. Après la
+sélection, la variante et chaque glyphe doivent exister dans la famille fournie :
+aucun remplacement par caractère, variante synthétique ou accès au système.
+Le raccourci `font` pris en charge est développé intégralement et réinitialise
+les composants omis. Petites capitales, tailles par mots-clés, polices système
+et correspondance relative des graisses restent absentes.
+
+## Flottants bornés et contrôles statiques
+
+`float:left/right` exige une largeur explicite, y compris les pourcentages pris
+en charge. Les flottants imbriqués ont leur propre contexte ; le texte utilise
+l’espace libre et `clear:left/right/both` descend sous les flottants concernés.
+**Tout le document contenant des flottants visibles doit tenir sur une page.**
+La fragmentation, la largeur intrinsèque des flottants et leur combinaison avec
+des tableaux sont absentes. La fusion parent-enfant des marges dans ces contextes
+est refusée ; une bordure ou un padding explicite peut les séparer. Le débordement
+d’une hauteur fixe reste visible, mais toute l’étendue peinte doit tenir sur la page.
+Un bloc de flux ordinaire avec fond ou bordure ne peut chevaucher un flottant
+antérieur. Un flottant introduit après du texte sur la même ligne est également
+refusé ; ces cas de superposition et de recomposition des lignes restent absents.
+
+Le fond de `html` peint toute la page. S’il est transparent, le fond du body est
+propagé au fond de page sans être peint deux fois. Les marges et bordures du body
+conservent leur géométrie. Les nœuds source `dl/dt/dd` restent distincts et sont
+projetés en `Sect/P/Sect` PDF, sans modèle plus riche de liste de définitions.
+Les enveloppes inline simples peuvent être séparées autour de blocs ; celles
+qui portent des décorations ou une portée de lien/langue autour des blocs sont refusées.
+
+Formulaires et contrôles sont refusés par défaut. Un instantané statique explicite
+admet les boutons radio et conserve l’état coché/désactivé dans un dessin vectoriel :
+
+```php
+use PDF\HtmlToPdf\FormControls;
+
+$options = new ConversionOptions(
+    fonts: $fonts,
+    formControls: FormControls::StaticSnapshot,
+);
+```
+
+La sortie porte des attributs logiques Form/PrintField, sans champ PDF interactif,
+action d’envoi ou JavaScript. Les autres contrôles, dimensions/décorations radio
+personnalisées et radios bloc/flottantes sont absents. Report les omet avec un
+diagnostic ; le mode strict les refuse. L’[exemple CSS1 historique](css1.md)
+fournit la configuration explicite complète.
 
 ## Validation des déclarations, récupération et bordures
 
