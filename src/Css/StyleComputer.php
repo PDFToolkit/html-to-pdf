@@ -76,7 +76,7 @@ final readonly class StyleComputer
         }
         $color = $this->value('color', fn(): Color => $this->values->color($css['color'], $parent->style->color) ?? throw new \InvalidArgumentException('Transparent text is not supported.'), $parent->style->color);
         $background = $this->value('background-color', fn(): ?Color => $this->values->color($css['background-color'], $color), null);
-        $display = $this->value('display', fn(): string => $this->values->keyword($css['display'], ['none', 'block', 'inline', 'list-item', 'table', 'table-row-group', 'table-header-group', 'table-footer-group', 'table-row', 'table-cell']), $this->defaults($tag)['display'] ?? 'inline');
+        $display = $this->value('display', fn(): string => $this->values->keyword($css['display'], ['none', 'block', 'inline', 'list-item', 'table', 'table-row-group', 'table-header-group', 'table-footer-group', 'table-row', 'table-cell', 'table-caption']), $this->defaults($tag)['display'] ?? 'inline');
         $fontWeight = $this->value('font-weight', function () use ($css): int {
             $value = strtolower($css['font-weight']);
             if ($value === 'normal') {
@@ -165,8 +165,8 @@ final readonly class StyleComputer
     private function defaults(string $tag): array
     {
         $display = match ($tag) {
-            'html', 'body', 'div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'address', 'p', 'pre', 'blockquote', 'ul', 'ol', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'caption' => 'block',
-            'li' => 'list-item', 'table' => 'table', 'thead' => 'table-header-group', 'tbody' => 'table-row-group', 'tfoot' => 'table-footer-group', 'tr' => 'table-row', 'td', 'th' => 'table-cell',
+            'html', 'body', 'div', 'section', 'article', 'aside', 'header', 'footer', 'main', 'nav', 'address', 'p', 'pre', 'blockquote', 'ul', 'ol', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr' => 'block',
+            'li' => 'list-item', 'table' => 'table', 'thead' => 'table-header-group', 'tbody' => 'table-row-group', 'tfoot' => 'table-footer-group', 'tr' => 'table-row', 'td', 'th' => 'table-cell', 'caption' => 'table-caption',
             'head', 'style', 'link', 'meta', 'title', 'script', 'template' => 'none', default => 'inline',
         };
         $values = ['display' => $display];

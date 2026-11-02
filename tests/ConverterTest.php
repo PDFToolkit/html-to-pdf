@@ -17,8 +17,11 @@ use PDF\HtmlToPdf\Layout\PageSettings;
 use PDF\HtmlToPdf\Style\Edges;
 use PDF\HtmlToPdf\UnsupportedPolicy;
 use PDF\Reading\DocumentReader;
+use PDF\Reading\EncodedStream;
 use PDF\Reading\FileBytes;
 use PDF\Reading\Inspection\DocumentInspector;
+use PDF\Reading\PageTreeReader;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class ConverterTest extends TestCase
@@ -54,6 +57,43 @@ final class ConverterTest extends TestCase
         $fresh = (new Converter())->convert($this->source('<p>Second document.</p>'), $options);
         self::assertSame($fresh->pdf, $second->pdf);
         self::assertStringNotContainsString('/URI', $second->pdf);
+    }
+
+    /** @return iterable<string, array{string}> */
+    public static function captionDeclarations(): iterable
+    {
+        yield 'native caption display' => [''];
+        yield 'explicit caption display' => ['caption { display: table-caption; }'];
+    }
+
+    #[DataProvider('captionDeclarations')]
+    public function testTableCaptionIsRenderedAboveItsRowWithPreservedUnicode(string $declaration): void
+    {
+        $source = $this->source(
+            '<table><caption>Légende</caption><tbody><tr><td>Donnée</td></tr></tbody></table>',
+            'body { font-size: 10pt; line-height: 16pt; } table { table-layout: fixed; } ' . $declaration,
+        );
+        $result = (new Converter())->convert($source, new ConversionOptions($this->fonts()));
+        self::assertSame(1, $result->pageCount);
+        self::assertSame([], $result->diagnostics);
+        $read = (new DocumentReader())->read(new FileBytes($result->pdf));
+        $inspection = (new DocumentInspector())->inspect($read)->jsonSerialize();
+        self::assertSame([], $inspection['diagnostics']);
+        self::assertFalse($inspection['truncated']);
+        self::assertCount(2, array_filter($inspection['nodes'], static fn(array $node): bool => $node['kind'] === 'mcr'));
+        $page = (new PageTreeReader($read))->read()->page(0);
+        $contents = $read->resolve($page->dictionary->get('Contents'));
+        self::assertInstanceOf(EncodedStream::class, $contents);
+        $operators = $read->streamData($contents);
+        preg_match_all('/\/ActualText\s*<([[:xdigit:]]+)>/', $operators, $actualTexts);
+        self::assertSame(
+            ['Légende', 'Donnée'],
+            array_map(static fn(string $hex): string => mb_convert_encoding(substr((string) hex2bin($hex), 2), 'UTF-8', 'UTF-16BE'), $actualTexts[1]),
+        );
+        preg_match_all('/1 0 0 1 [-0-9.]+ ([-0-9.]+) Tm/', $operators, $positions);
+        self::assertNotEmpty($positions[1]);
+        // PDF coordinates start at the bottom: the caption's baseline must be one line higher.
+        self::assertEqualsWithDelta(16.0, (float) $positions[1][0] - (float) $positions[1][array_key_last($positions[1])], 0.001);
     }
 
     public function testHiddenContentDoesNotRequireItsMissingFontVariant(): void
