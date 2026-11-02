@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "retrieved": "2026-11-02",
+  "license": "BSD-3-Clause",
+  "use": "Software-development regression fixture, not an authoritative test suite or a CSS1 conformance claim.",
+  "licensingSource": "https://www.w3.org/Style/CSS/Test/Overview.en.html",
+  "licenseText": "https://www.w3.org/copyright/3-clause-bsd-license-2008/",
+  "licenseExplanation": "https://www.w3.org/copyright/test-suites-licenses/",
+  "files": [
+    {
+      "url": "https://www.w3.org/Style/CSS/Test/CSS1/current/test5526c.htm",
+      "file": "test5526c.htm",
+      "sha256": "6dcacbb4314074283548010682dcb632abe459852f38f18c41abc8a33d321097",
+      "bytes": 2907,
+      "modified": false
+    },
+    {
+      "url": "https://www.w3.org/Style/CSS/Test/CSS1/current/sec5526c.gif",
+      "file": "sec5526c.gif",
+      "sha256": "ee74c43a59b9622ed6fd25381a7cd7f282a90fe0a1c147de90090a5d8cda6e08",
+      "bytes": 12330,
+      "modified": false
+    }
+  ]
+}
