@@ -8,6 +8,7 @@ use PDF\Document\Fonts\CMaps\UnicodeSequence;
 use PDF\Fonts\OpenType\GlyphText;
 use PDF\Fonts\OpenType\ShapedText;
 use PDF\Fonts\TrueType\UnicodeText;
+use PDF\HtmlToPdf\Style\TextSpacing;
 use PDF\Syntax\Object\StringObject\HexadecimalString;
 use PDFToolkit\OpenType\Cmap\UnicodeCharacterMap;
 use PDFToolkit\OpenType\Cmap\UnicodeCmapReader;
@@ -44,6 +45,7 @@ final readonly class PreparedLayout
     private ?GsubTable $substitution;
     private ?GposTable $positioning;
     private FeatureSelection $features;
+    private FeatureSelection $spacedFeatures;
 
     public function __construct(private SfntFont $font, private ReadLimits $limits)
     {
@@ -58,9 +60,10 @@ final readonly class PreparedLayout
         $this->substitution = $font->hasTable(new Tag('GSUB')) ? (new GsubReader($limits))->read($font->table(new Tag('GSUB')), $font->glyphCount()) : null;
         $this->positioning = $font->hasTable(new Tag('GPOS')) ? (new GposReader($limits))->read($font->table(new Tag('GPOS')), $font->glyphCount()) : null;
         $this->features = new FeatureSelection(new Tag('latn'), features: [new Tag('liga'), new Tag('kern'), new Tag('mark')]);
+        $this->spacedFeatures = new FeatureSelection(new Tag('latn'), features: [new Tag('kern'), new Tag('mark')]);
     }
 
-    public function create(UnicodeText $text): ShapedText
+    public function create(UnicodeText $text, TextSpacing $spacing = new TextSpacing(), float $fontUnitsPerPoint = 1): ShapedText
     {
         if (count($text->codePoints) > $this->limits->maxOutputGlyphs) {
             throw new \InvalidArgumentException('Layout inputs exceed the explicit glyph budget.');
@@ -74,14 +77,16 @@ final readonly class PreparedLayout
             $glyphs[] = $glyph;
         }
         $sequence = new GlyphSequence($glyphs);
+        $features = ($spacing->letterSpacing ?? 0) == 0 ? $this->features : $this->spacedFeatures;
         if ($this->substitution !== null) {
-            $sequence = (new SubstitutionEngine($this->limits))->apply($this->substitution, $this->features, $sequence, $this->definition);
+            $sequence = (new SubstitutionEngine($this->limits))->apply($this->substitution, $features, $sequence, $this->definition);
         }
         $positions = array_map(fn(GlyphId $glyph): GlyphPosition => new GlyphPosition($this->metrics->advanceWidth($glyph)), $sequence->glyphs);
         $positioned = new PositionedGlyphSequence($sequence, $positions);
         if ($this->positioning !== null) {
-            $positioned = (new PositioningEngine($this->limits))->apply($this->positioning, $this->features, $positioned, $this->definition);
+            $positioned = (new PositioningEngine($this->limits))->apply($this->positioning, $features, $positioned, $this->definition);
         }
+        $positioned = (new GlyphSpacing())->apply($text, $positioned, $spacing, $fontUnitsPerPoint);
 
         $seen = [];
         $mapped = [];

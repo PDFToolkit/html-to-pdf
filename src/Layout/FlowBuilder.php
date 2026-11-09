@@ -73,7 +73,7 @@ final class FlowBuilder
             throw new UnsupportedFeature('A block box exceeds its available width.');
         }
         $innerX = $outerX + $edges->left + $s->padding->left;
-        $markerWidth = $marker === null ? 0.0 : max(18.0, $this->inline->face($s)->measure($marker . ' ', $s->fontSize));
+        $markerWidth = $marker === null ? 0.0 : max(18.0, $this->inline->face($s)->measure($marker . ' ', $s->fontSize, $s->textSpacing));
         if ($node->tag === 'table') {
             if ($floats !== null) {
                 throw new UnsupportedFeature('Combining table formatting and floats is outside this layout profile.');
@@ -85,11 +85,12 @@ final class FlowBuilder
         } elseif ($node->tag === 'img') {
             $flow = [new FlowItem($blockImage->imageHeight, [new Image($innerX, 0, $blockImage->imageWidth, $blockImage->imageHeight, $blockImage->image, $blockImage->semanticId)])];
         } else {
-            $flow = $this->children($node, $innerX + $markerWidth, $width - $markerWidth, $semantic, $uri, $floats, $top + $s->margin->top + $edges->top + $s->padding->top);
+            // A marker narrows the line, not the list item's percentage indentation basis.
+            $flow = $this->children($node, $innerX + $markerWidth, $width - $markerWidth, $semantic, $uri, $floats, $top + $s->margin->top + $edges->top + $s->padding->top, $marker === null ? null : $width);
         }
         if ($marker !== null && $label !== null) {
             if ($flow === []) {
-                $flow = $this->inline->format([new InlinePiece('', $s, $label, lineBreak: true)], $innerX + $markerWidth, $width - $markerWidth, $s, 'paragraph-' . ++$this->paragraph);
+                $flow = $this->inline->format([new InlinePiece('', $s, $label, lineBreak: true)], $innerX + $markerWidth, $width - $markerWidth, $s, 'paragraph-' . ++$this->paragraph, indentBasis: $width);
             }
             $first = $flow[0];
             foreach ($flow as $candidate) {
@@ -108,7 +109,7 @@ final class FlowBuilder
                     break;
                 }
             }
-            array_unshift($first->commands, new Text($font, $marker, $s->fontSize, $innerX, $baseline, $s->color, $label, $uri));
+            array_unshift($first->commands, new Text($font, $marker, $s->fontSize, $innerX, $baseline, $s->color, $label, $uri, $s->textSpacing));
         }
         $flow = $this->margins->collapse($flow);
         $topMargin = new FlowItem($s->margin->top);
@@ -234,13 +235,14 @@ final class FlowBuilder
     /**
      * @return list<FlowItem>
      */
-    private function children(Node $node, float $x, float $width, string $semantic, ?string $uri, ?FloatContext $floats = null, float $top = 0): array
+    private function children(Node $node, float $x, float $width, string $semantic, ?string $uri, ?FloatContext $floats = null, float $top = 0, ?float $indentBasis = null): array
     {
         if ($width <= 0) {
             throw new UnsupportedFeature('List indentation leaves no available width.');
         }
         $flow = [];
         $inlineNodes = [];
+        $firstLine = true;
         $listCounter = null;
         foreach ((new InlineBlockSplitter())->split($node->children) as $child) {
             if ($child->style->display === 'none') {
@@ -250,11 +252,14 @@ final class FlowBuilder
                 $inlineNodes[] = $child;
                 continue;
             }
-            $inlineFlow = $this->flush($inlineNodes, $x, $width, $node->style, $semantic, $uri, $floats, $top + $this->height($flow));
+            $inlineFlow = $this->flush($inlineNodes, $x, $width, $node->style, $semantic, $uri, $floats, $top + $this->height($flow), $firstLine, $indentBasis);
             if ($child->style->float !== 'none' && $inlineFlow !== []) {
                 throw new UnsupportedFeature('Inserting a float after inline content in the same formatting context is outside this layout profile.');
             }
             array_push($flow, ...$inlineFlow);
+            if ($inlineFlow !== []) {
+                $firstLine = false;
+            }
             $inlineNodes = [];
             $marker = null;
             if ($child->tag === 'li' && $child->style->display === 'list-item') {
@@ -289,12 +294,13 @@ final class FlowBuilder
                     $position = $cursor + $gap;
                 }
             }
+            $firstLine = false;
             $childFlow = $this->build($child, $x, $width, $semantic, marker: $marker, uri: $uri, floats: $floats, top: $position);
             array_push($flow, ...$childFlow);
             $flow = $this->margins->collapse($flow);
         }
 
-        return $this->margins->collapse([...$flow, ...$this->flush($inlineNodes, $x, $width, $node->style, $semantic, $uri, $floats, $top + $this->height($flow))]);
+        return $this->margins->collapse([...$flow, ...$this->flush($inlineNodes, $x, $width, $node->style, $semantic, $uri, $floats, $top + $this->height($flow), $firstLine, $indentBasis)]);
     }
 
     private function floating(Node $node, float $x, float $width, float $top, string $semantic, ?string $marker, ?string $uri, FloatContext $floats): FlowItem
@@ -331,7 +337,7 @@ final class FlowBuilder
     /** @param list<Node> $nodes
      * @return list<FlowItem>
      */
-    private function flush(array $nodes, float $x, float $width, ComputedStyle $style, string $semantic, ?string $uri, ?FloatContext $floats = null, float $top = 0): array
+    private function flush(array $nodes, float $x, float $width, ComputedStyle $style, string $semantic, ?string $uri, ?FloatContext $floats = null, float $top = 0, bool $firstLine = true, ?float $indentBasis = null): array
     {
         if ($nodes === []) {
             return [];
@@ -341,7 +347,7 @@ final class FlowBuilder
             $pieces = [...$pieces, ...$this->collect($node, $semantic, $width, $uri)];
         }
 
-        return $this->inline->format($pieces, $x, $width, $style, 'paragraph-' . ++$this->paragraph, $floats === null ? null : new LineExclusions($floats, $x, $width), $top);
+        return $this->inline->format($pieces, $x, $width, $style, 'paragraph-' . ++$this->paragraph, $floats === null ? null : new LineExclusions($floats, $x, $width), $top, $firstLine, $indentBasis);
     }
 
     /**

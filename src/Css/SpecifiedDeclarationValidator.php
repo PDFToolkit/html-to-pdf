@@ -32,6 +32,13 @@ final readonly class SpecifiedDeclarationValidator
             return;
         }
         switch ($property) {
+            case 'letter-spacing':
+            case 'word-spacing':
+                (new TextValues())->spacing($value, 1, 1);
+                return;
+            case 'text-indent':
+                (new TextValues())->indent($value, 1, 1);
+                return;
             case 'font-family':
                 (new FontFamilyParser())->parse($value);
                 return;

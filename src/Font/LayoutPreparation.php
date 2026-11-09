@@ -6,6 +6,7 @@ namespace PDF\HtmlToPdf\Font;
 
 use PDF\Fonts\OpenType\ShapedText;
 use PDF\Fonts\TrueType\UnicodeText;
+use PDF\HtmlToPdf\Style\TextSpacing;
 use PDFToolkit\OpenType\Sfnt\ReadLimits;
 use PDFToolkit\OpenType\Sfnt\SfntFont;
 
@@ -16,10 +17,10 @@ final class LayoutPreparation
 
     public function __construct(private readonly SfntFont $font, private readonly ReadLimits $limits) {}
 
-    public function create(UnicodeText $text): ShapedText
+    public function create(UnicodeText $text, TextSpacing $spacing = new TextSpacing(), float $fontUnitsPerPoint = 1): ShapedText
     {
         $this->prepared ??= new PreparedLayout($this->font, $this->limits);
 
-        return $this->prepared->create($text);
+        return $this->prepared->create($text, $spacing, $fontUnitsPerPoint);
     }
 }

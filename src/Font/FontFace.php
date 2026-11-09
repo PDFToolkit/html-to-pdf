@@ -9,6 +9,7 @@ use PDF\Fonts\TrueType\FontProgram;
 use PDF\Fonts\TrueType\FontProgramLimits;
 use PDF\Fonts\TrueType\UnicodeText;
 use PDF\HtmlToPdf\Exception\UnsupportedFeature;
+use PDF\HtmlToPdf\Style\TextSpacing;
 use PDFToolkit\OpenType\Positioning\GlyphPosition;
 
 /** A caller-supplied, embeddable static TrueType face. No font discovery or file access. */
@@ -24,12 +25,12 @@ final readonly class FontFace
         $this->layout = new LayoutPreparation($this->program->font, $reading);
     }
 
-    public function measure(string $text, float $size): float
+    public function measure(string $text, float $size, TextSpacing $spacing = new TextSpacing()): float
     {
-        return $this->shape($text, $size)->width;
+        return $this->shape($text, $size, $spacing)->width;
     }
 
-    public function shape(string $text, float $size): FontRun
+    public function shape(string $text, float $size, TextSpacing $spacing = new TextSpacing()): FontRun
     {
         $metrics = $this->metrics($size);
         if (strlen($text) > $this->limits->maxTextBytes || preg_match('//u', $text) !== 1) {
@@ -40,13 +41,17 @@ final readonly class FontFace
             throw new UnsupportedFeature('This horizontal font profile supports Latin, Greek and Cyrillic, without bidirectional or complex-script shaping.');
         }
         try {
-            $shaped = $this->layout->create(new UnicodeText($text));
+            $shaped = $this->layout->create(new UnicodeText($text), $spacing, $this->program->source->metrics->unitsPerEm / $size);
         } catch (\InvalidArgumentException $error) {
             throw new UnsupportedFeature('The selected font cannot shape this text: ' . $error->getMessage(), previous: $error);
         }
         $width = array_sum(array_map(static fn(GlyphPosition $position): float => $position->xAdvance, $shaped->layout->positions)) * $size / $this->program->source->metrics->unitsPerEm;
 
-        return new FontRun($this, $shaped, $size, $width, $metrics);
+        if (!is_finite($width) || $width < 0) {
+            throw new UnsupportedFeature('Text spacing must retain a finite non-negative run advance.');
+        }
+
+        return new FontRun($this, $shaped, $size, $width, $metrics, $spacing);
     }
 
     public function metrics(float $size): FontMetrics

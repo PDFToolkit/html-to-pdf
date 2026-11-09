@@ -68,7 +68,7 @@ final readonly class Declarations
         if ($property === 'page-break-inside') {
             $property = 'break-inside';
         }
-        $supported = ['font-family', 'font-variant', 'float', 'clear', 'display', 'font-size', 'line-height', 'font-weight', 'font-style', 'color', 'background-color', 'text-align', 'white-space', 'text-decoration', 'text-decoration-line', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'width', 'height', 'break-before', 'break-after', 'break-inside', 'orphans', 'widows', 'list-style-type', 'vertical-align', 'table-layout'];
+        $supported = ['font-family', 'font-variant', 'float', 'clear', 'display', 'font-size', 'line-height', 'font-weight', 'font-style', 'color', 'background-color', 'text-align', 'word-spacing', 'letter-spacing', 'text-indent', 'white-space', 'text-decoration', 'text-decoration-line', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left', 'width', 'height', 'break-before', 'break-after', 'break-inside', 'orphans', 'widows', 'list-style-type', 'vertical-align', 'table-layout'];
         if (!in_array($property, $supported, true)) {
             $this->diagnostics->unsupported('css.property', 'Unsupported CSS declaration: ' . $property . ': ' . $value);
             return [];

@@ -36,7 +36,7 @@ final class FontResources
             $this->budget->resource(strlen($command->font->program->source->bytes));
             $this->fonts[$command->font] = new EmbeddedFont($command->font, new NameType('F' . (count($this->fonts) + 1)));
         }
-        $run = $command->font->shape($command->text, $command->size);
+        $run = $command->font->shape($command->text, $command->size, $command->spacing);
         $this->budget->glyphs(count($run->text->glyphs));
         $this->fonts[$command->font]->add($run);
         $this->runs[$command] = $run;

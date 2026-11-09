@@ -14,6 +14,7 @@ use PDF\HtmlToPdf\Exception\UnsupportedFeature;
 use PDF\HtmlToPdf\Font\FontFace;
 use PDF\HtmlToPdf\Font\FontStyle;
 use PDF\HtmlToPdf\Style\ComputedStyle;
+use PDF\HtmlToPdf\Style\TextSpacing;
 
 /** Horizontal inline flow, measured with exactly the font shaper used by serialization. */
 final class InlineFormatter
@@ -30,18 +31,25 @@ final class InlineFormatter
     /** @param list<InlinePiece> $pieces
      * @return list<FlowItem>
      */
-    public function format(array $pieces, float $x, float $width, ComputedStyle $style, string $paragraph, ?LineExclusions $exclusions = null, float $top = 0): array
+    public function format(array $pieces, float $x, float $width, ComputedStyle $style, string $paragraph, ?LineExclusions $exclusions = null, float $top = 0, bool $firstLine = true, ?float $indentBasis = null): array
     {
         /** @var list<InlinePiece> $line */
         $line = [];
         $lines = [];
         $pendingSpace = null;
+        $breakLine = [];
+        $word = [];
+        $preservedSpace = false;
         $explicitBreak = false;
         $cursor = 0.0;
+        $lineOffset = 0.0;
+        $indent = $firstLine ? $style->textIndent->resolve($indentBasis ?? $width) : 0.0;
         foreach ($pieces as $piece) {
             if ($piece->lineBreak) {
-                $lines[] = $this->emit($line, $x, $width, $style, $exclusions, $top, $cursor);
+                $lines[] = $this->emit($line, $x, $width, $style, $exclusions, $top, $cursor, $indent, $lineOffset);
                 $line = [];
+                $breakLine = $word = [];
+                $preservedSpace = false;
                 $pendingSpace = null;
                 $explicitBreak = true;
                 continue;
@@ -52,17 +60,22 @@ final class InlineFormatter
                     $candidate = $this->append($candidate, $pendingSpace);
                 }
                 $candidate[] = $piece;
-                if ($this->width($candidate) > $this->available($candidate, $line === [], $x, $width, $style, $exclusions, $top + $cursor)->width + 0.001) {
+                if ($this->width($candidate) > $this->available($candidate, $line === [], $x, $width, $style, $exclusions, $top + $cursor + $lineOffset, $indent)->width + 0.001) {
                     if ($line === [] || in_array($style->whiteSpace, ['pre', 'nowrap'], true)) {
                         throw new UnsupportedFeature('An inline image exceeds the available line width. Supply smaller explicit dimensions.');
                     }
-                    $lines[] = $this->emit($line, $x, $width, $style, $exclusions, $top, $cursor);
+                    $lines[] = $this->emit($line, $x, $width, $style, $exclusions, $top, $cursor, $indent, $lineOffset);
                     $candidate = [$piece];
                 }
-                if (($piece->radio->width ?? $piece->imageWidth) > $width + 0.001) {
+                if (($piece->radio->width ?? $piece->imageWidth) > $this->available($candidate, true, $x, $width, $style, $exclusions, $top + $cursor + $lineOffset, $indent)->width + 0.001) {
                     throw new UnsupportedFeature('An image exceeds the available content width.');
                 }
+                $space = $this->available($candidate, $line === [], $x, $width, $style, $exclusions, $top + $cursor + $lineOffset, $indent);
+                $lineOffset = $space->top - $top - $cursor;
                 $line = $candidate;
+                $breakLine = $line;
+                $word = [];
+                $preservedSpace = true;
                 $pendingSpace = null;
                 $explicitBreak = false;
                 continue;
@@ -75,39 +88,54 @@ final class InlineFormatter
             foreach ($tokens as $token) {
                 $isSpace = preg_match('/^[\x20\t\r\n\f]+$/D', $token) === 1;
                 if ($isSpace && !$preserve) {
-                    $pendingSpace = new InlinePiece(' ', $piece->style, $piece->semanticId, $piece->uri);
+                    $pendingSpace ??= new InlinePiece(' ', $piece->style, $piece->semanticId, $piece->uri);
                     continue;
                 }
                 $parts = $preserve && $isSpace ? preg_split($piece->style->whiteSpace === 'pre-wrap' ? '/(\r\n|\r|\n|\f|\t| )/' : '/(\r\n|\r|\n|\f|\t)/', $token, -1, PREG_SPLIT_DELIM_CAPTURE | PREG_SPLIT_NO_EMPTY) : [$token];
                 foreach ($parts ?: [] as $part) {
                     if ($preserve && in_array($part, ["\r\n", "\r", "\n", "\f"], true)) {
-                        $lines[] = $this->emit($line, $x, $width, $style, $exclusions, $top, $cursor);
+                        $lines[] = $this->emit($line, $x, $width, $style, $exclusions, $top, $cursor, $indent, $lineOffset);
                         $line = [];
+                        $breakLine = $word = [];
+                        $preservedSpace = false;
                         $pendingSpace = null;
                         $explicitBreak = true;
                         continue;
                     }
                     if ($part === "\t") {
-                        $space = $this->measure($this->face($piece->style), ' ', $piece->style->fontSize);
+                        if (($piece->style->textSpacing->letterSpacing ?? 0.0) !== 0.0 || ($piece->style->textSpacing->wordSpacing ?? 0.0) !== 0.0) {
+                            throw new UnsupportedFeature('Preserved tabs with nonzero text spacing require exact tab-stop positioning.');
+                        }
+                        $space = $this->measure($this->face($piece->style), ' ', $piece->style->fontSize, $piece->style->textSpacing);
                         $column = (int) floor($this->width($line) / max($space, 0.0001));
                         $part = str_repeat(' ', 8 - $column % 8);
                     }
                     $next = new InlinePiece($part, $piece->style, $piece->semanticId, $piece->uri);
+                    if ($pendingSpace !== null || ($preserve && $isSpace) || $preservedSpace) {
+                        $breakLine = $line;
+                        $word = [$next];
+                    } else {
+                        $word = $this->append($word, $next);
+                    }
+                    $preservedSpace = $preserve && $isSpace;
                     $candidate = $line;
                     if ($pendingSpace !== null && $candidate !== []) {
                         $candidate = $this->append($candidate, $pendingSpace);
                     }
                     $candidate = $this->append($candidate, $next);
-                    if ($this->width($candidate) > $this->available($candidate, $line === [], $x, $width, $style, $exclusions, $top + $cursor)->width + 0.001) {
-                        if ($line === [] || in_array($piece->style->whiteSpace, ['pre', 'nowrap'], true)) {
+                    if ($this->width($candidate) > $this->available($candidate, $breakLine === [], $x, $width, $style, $exclusions, $top + $cursor + $lineOffset, $indent)->width + 0.001) {
+                        if ($breakLine === [] || in_array($piece->style->whiteSpace, ['pre', 'nowrap'], true)) {
                             throw new UnsupportedFeature('An unbreakable text run exceeds the content width; automatic word splitting is outside this layout profile.');
                         }
-                        $lines[] = $this->emit($line, $x, $width, $style, $exclusions, $top, $cursor);
-                        $candidate = [$next];
-                        if ($this->width($candidate) > $this->available($candidate, true, $x, $width, $style, $exclusions, $top + $cursor)->width + 0.001) {
+                        $lines[] = $this->emit($breakLine, $x, $width, $style, $exclusions, $top, $cursor, $indent, $lineOffset);
+                        $candidate = $word;
+                        $breakLine = [];
+                        if ($this->width($candidate) > $this->available($candidate, true, $x, $width, $style, $exclusions, $top + $cursor + $lineOffset, $indent)->width + 0.001) {
                             throw new UnsupportedFeature('An unbreakable text run exceeds the content width.');
                         }
                     }
+                    $space = $this->available($candidate, $breakLine === [], $x, $width, $style, $exclusions, $top + $cursor + $lineOffset, $indent);
+                    $lineOffset = $space->top - $top - $cursor;
                     $line = $candidate;
                     $pendingSpace = null;
                     $explicitBreak = false;
@@ -115,7 +143,7 @@ final class InlineFormatter
             }
         }
         if ($line !== [] || $explicitBreak) {
-            $lines[] = $this->emit($line, $x, $width, $style, $exclusions, $top, $cursor);
+            $lines[] = $this->emit($line, $x, $width, $style, $exclusions, $top, $cursor, $indent, $lineOffset);
         }
         foreach ($lines as $item) {
             $item->paragraph = $paragraph;
@@ -145,6 +173,12 @@ final class InlineFormatter
         if ($last !== null && $last->image === null && $last->radio === null && $piece->image === null && $piece->radio === null && $last->style == $piece->style && $last->semanticId === $piece->semanticId && $last->uri === $piece->uri) {
             $pieces[array_key_last($pieces)] = new InlinePiece($last->text . $piece->text, $piece->style, $piece->semanticId, $piece->uri);
         } else {
+            if ($last !== null && $last->image === null && $last->radio === null && $piece->image === null && $piece->radio === null
+                && (($last->style->textSpacing->letterSpacing ?? 0.0) !== 0.0 || ($piece->style->textSpacing->letterSpacing ?? 0.0) !== 0.0)
+                && preg_match('/\X\z/u', $last->text, $left) === 1 && preg_match('/^\X/u', $piece->text, $right) === 1
+                && preg_match('/^\X/u', $left[0] . $right[0], $joined) === 1 && strlen($joined[0]) !== strlen($left[0])) {
+                throw new UnsupportedFeature('Letter spacing across a grapheme split between inline runs requires shared cluster shaping.');
+            }
             $pieces[] = $piece;
         }
 
@@ -156,24 +190,24 @@ final class InlineFormatter
     {
         $width = 0.0;
         foreach ($pieces as $piece) {
-            $width += $piece->radio->width ?? ($piece->image !== null ? $piece->imageWidth : $this->measure($this->face($piece->style), $piece->text, $piece->style->fontSize));
+            $width += $piece->radio->width ?? ($piece->image !== null ? $piece->imageWidth : $this->measure($this->face($piece->style), $piece->text, $piece->style->fontSize, $piece->style->textSpacing));
         }
 
         return $width;
     }
 
-    private function measure(FontFace $font, string $text, float $size): float
+    private function measure(FontFace $font, string $text, float $size, TextSpacing $spacing): float
     {
         $this->measuredBytes += strlen($text);
         if ($this->measuredBytes > $this->options->limits->maxTextCharacters * 256) {
             throw new LimitExceeded('Cumulative text shaping work budget exhausted.');
         }
 
-        $key = spl_object_id($font) . ':' . $size . ':' . $text;
+        $key = spl_object_id($font) . ':' . $size . ':' . $spacing->cacheKey() . ':' . $text;
         if (isset($this->measurements[$key])) {
             return $this->measurements[$key];
         }
-        $width = $font->measure($text, $size);
+        $width = $font->measure($text, $size, $spacing);
         $entryBytes = strlen($key) + 64;
         if (count($this->measurements) < $this->options->limits->maxCommands
             && $this->cachedBytes + $entryBytes <= min(4_194_304, $this->options->limits->maxTextCharacters * 16)) {
@@ -211,11 +245,11 @@ final class InlineFormatter
                 continue;
             }
             $font = $this->face($piece->style);
-            $runWidth = $this->measure($font, $piece->text, $piece->style->fontSize);
+            $runWidth = $this->measure($font, $piece->text, $piece->style->fontSize, $piece->style->textSpacing);
             if ($piece->style->background !== null) {
                 $commands[] = new Rectangle($x, 0, $runWidth, $height, $piece->style->background);
             }
-            $commands[] = new Text($font, $piece->text, $piece->style->fontSize, $x, $baseline, $piece->style->color, $piece->semanticId ?? throw new \LogicException('Text needs structure.'), $piece->uri);
+            $commands[] = new Text($font, $piece->text, $piece->style->fontSize, $x, $baseline, $piece->style->color, $piece->semanticId ?? throw new \LogicException('Text needs structure.'), $piece->uri, $piece->style->textSpacing);
             if ($piece->style->underline && $runWidth > 0) {
                 $commands[] = new Rectangle($x, min($height - 0.5, $baseline + $piece->style->fontSize * 0.1), $runWidth, max(0.5, $piece->style->fontSize / 16), $piece->style->color);
             }
@@ -254,18 +288,20 @@ final class InlineFormatter
     }
 
     /** @param list<InlinePiece> $pieces */
-    private function available(array $pieces, bool $empty, float $x, float $width, ComputedStyle $style, ?LineExclusions $exclusions, float $top): LineSpace
+    private function available(array $pieces, bool $empty, float $x, float $width, ComputedStyle $style, ?LineExclusions $exclusions, float $top, float $indent): LineSpace
     {
-        if ($exclusions === null) {
-            return new LineSpace($x, $width, $top);
+        $space = $exclusions === null ? new LineSpace($x, $width, $top)
+            : $exclusions->space($top, $this->metrics($pieces, $style)[0], $empty ? max(0.0, $this->width($pieces) + $indent) : 0);
+        if (!is_finite($space->x + $indent) || !is_finite($space->width - $indent) || $space->width - $indent <= 0) {
+            throw new UnsupportedFeature('First-line indentation leaves no finite positive line width.');
         }
-        return $exclusions->space($top, $this->metrics($pieces, $style)[0], $empty ? $this->width($pieces) : 0);
+        return new LineSpace($space->x + $indent, $space->width - $indent, $space->top);
     }
 
     /** @param list<InlinePiece> $pieces */
-    private function emit(array $pieces, float $x, float $width, ComputedStyle $style, ?LineExclusions $exclusions, float $top, float &$cursor): FlowItem
+    private function emit(array $pieces, float $x, float $width, ComputedStyle $style, ?LineExclusions $exclusions, float $top, float &$cursor, float &$indent, float &$lineOffset): FlowItem
     {
-        $space = $this->available($pieces, true, $x, $width, $style, $exclusions, $top + $cursor);
+        $space = $this->available($pieces, true, $x, $width, $style, $exclusions, $top + $cursor + $lineOffset, $indent);
         $item = $this->line($pieces, $space->x, $space->width, $style);
         $gap = $space->top - $top - $cursor;
         if ($gap > 0) {
@@ -274,6 +310,8 @@ final class InlineFormatter
             $item->height += $gap;
         }
         $cursor += $item->height;
+        $indent = 0.0;
+        $lineOffset = 0.0;
         return $item;
     }
 
