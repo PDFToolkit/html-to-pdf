@@ -4,6 +4,25 @@
 
 ## Unreleased
 
+## 0.4.0 — 2026-11-09
+
+- Add inherited `word-spacing` and `letter-spacing` with normal, zero and signed
+  lengths, plus signed/percentage `text-indent` on the first eligible line.
+  Preserve computed relative lengths through inheritance and reject invalid
+  declarations before cascade.
+- Share adjusted shaped advances between wrapping, PDF text, inline decoration
+  and link bounds. Preserve Unicode and combining marks; disable optional
+  ligatures only for nonzero letter spacing, leaving normal/zero shaping intact.
+  Keep unsupported negative advances and cross-span graphemes explicit.
+- Preserve first-line eligibility through BR, pagination and anonymous fragments
+  around in-flow blocks. Resolve percentage indentation against the content width
+  of the block containing the lines, independently of temporary float exclusions.
+- Add an original text example, native PDF/Unicode/geometry checks, independent
+  Chromium/Firefox witnesses and negative oracle tests. Document the trailing
+  grapheme advance convention and the limits of browser-pagination comparisons.
+- Update English/French guides and the CSS1 registry: 52 partial and 10 unsupported
+  requirements. CSS1, complete text/font behavior, PDF/A and PDF/UA remain unqualified.
+
 ## 0.3.1 - 2026-11-09
 
 - Update the locked development dependency `symfony/filesystem` to 7.4.23, addressing [GHSA-6prc-h956-hxjq](https://github.com/symfony/symfony/security/advisories/GHSA-6prc-h956-hxjq) in the code-style toolchain.

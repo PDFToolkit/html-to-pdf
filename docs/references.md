@@ -2,7 +2,7 @@
 
 [English](references.md) · [Français](fr/references.md)
 
-Reviewed on 2026-11-02. This independent MIT implementation uses primary
+Reviewed on 2026-11-09. This independent MIT implementation uses primary
 HTML/CSS specifications to define its supported profile. Its examples use
 original illustrations and separately licensed fonts.
 
@@ -14,6 +14,7 @@ original illustrations and separately licensed fonts.
 | [CSS syntax errors](https://www.w3.org/TR/CSS2/syndata.html#parsing-errors) | Declaration-local rejection and bounded recovery; complete browser recovery is not claimed. |
 | [CSS imports and cascade](https://www.w3.org/TR/CSS2/cascade.html#at-import) | Import source order, relative sheet identity, specificity and importance. Fetching is replaced by an explicit catalog. |
 | [CSS border properties](https://www.w3.org/TR/CSS2/box.html#border-properties) | Independent sides and shorthand semantics; the package documents its own keyword widths and supported contexts. |
+| [CSS 2.1 text](https://www.w3.org/TR/2011/REC-CSS2-20110607/text.html) | Shared definitions for inherited text spacing and first-line indentation. Browser/PDF witnesses scope the implemented geometry; full text conformance remains unqualified. |
 | [CSS Cascade 5](https://www.w3.org/TR/css-cascade-5/) | Cascade/inheritance concepts; no claim for all levels, layers or scopes. |
 | [CSS Values 4](https://www.w3.org/TR/css-values-4/#absolute-lengths) | Absolute conversion: 1in = 96px = 72pt. |
 | [CSS Fragmentation 3](https://www.w3.org/TR/css-break-3/) | Page-break and widow/orphan concepts within the supported profile. |

@@ -130,6 +130,54 @@ Le raccourci `font` pris en charge est développé intégralement et réinitiali
 les composants omis. Petites capitales, tailles par mots-clés, polices système
 et correspondance relative des graisses restent absentes.
 
+## Espacements et retrait de première ligne
+
+```css
+p { word-spacing: .2em; letter-spacing: 1px; text-indent: 10%; }
+p.compact { word-spacing: -1px; letter-spacing: -.02em; text-indent: -12px; }
+```
+
+`word-spacing` et `letter-spacing` acceptent `normal`, zéro et les longueurs
+signées `px`, `pt`, `pc`, `mm`, `cm`, `in` ou `em` ; l’extension `rem` existante
+fonctionne aussi. Les espacements en pourcentage sont refusés. `text-indent`
+admet les mêmes longueurs ainsi que les pourcentages signés, avec zéro comme
+valeur initiale. `ex` reste absent. Les valeurs invalides sont refusées avant
+cascade : en mode Report, une déclaration invalide ultérieure ne supprime pas
+une valeur valide précédente.
+
+Ces trois propriétés sont héritées. Les longueurs relatives sont calculées avec
+la taille de police de l’élément puis héritées en points absolus ; augmenter la
+police d’un enfant ne recalcule pas sa valeur `em` héritée. Un retrait en
+pourcentage reste différé jusqu’au placement et utilise la largeur de contenu
+du bloc contenant les lignes. Il ne dépend pas du rétrécissement temporaire d’une
+ligne par un flottant. Seule la première ligne formatée admissible est décalée :
+`br`, nouvelle page et fragments inline anonymes suivant un bloc dans le flux ne
+recommencent pas le retrait du parent. Chaque bloc descendant applique encore
+son propre retrait de première ligne, hérité ou spécifié.
+
+L’espacement des mots s’applique aux espaces U+0020 et insécables U+00A0 restants
+après traitement des blancs. L’espace insécable conserve son rôle. Un espacement
+de lettres non nul ajoute une avance après chaque graphème, y compris à la fin,
+selon les témoins ciblés Chromium/Firefox. Les accents combinants restent attachés
+et les ligatures facultatives sont désactivées. `normal` et zéro conservent le
+shaping initial. Ce profil horizontal latin/grec/cyrillique borné n’annonce pas
+CSS Text complet. Une avance totale négative est refusée. Un espacement de
+lettres non nul sur un graphème partagé entre plusieurs spans inline est également refusé, car le
+shaping à travers ces frontières de fragments reste absent. Un retrait ne
+laissant aucune largeur de ligne positive échoue explicitement. Les tabulations
+préservées avec `letter-spacing` ou `word-spacing` non nul lèvent
+`UnsupportedFeature` : le profil de tabulation existant à espacement normal est
+conservé, sans annoncer un placement exact des taquets CSS. Les budgets
+existants de shaping, commandes et sortie restent applicables.
+
+Les mêmes avances déterminent les retours, le texte PDF, les fonds inline,
+soulignements et annotations de lien. `ComputedStyle::textSpacing` expose les
+valeurs immuables `TextSpacing` en points (`null` signifie `normal`) ;
+`ComputedStyle::textIndent` expose un `TextIndent` signé avec son indicateur de
+pourcentage. L’[exemple et ses contrôles indépendants](css1.md#espacements-et-retrait-de-première-ligne)
+montrent le comportement implémenté. Justification, transformation, sélection
+complète des polices et décorations supplémentaires restent hors de ce jalon.
+
 ## Flottants bornés et contrôles statiques
 
 `float:left/right` exige une largeur explicite, y compris les pourcentages pris

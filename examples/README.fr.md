@@ -7,6 +7,7 @@
 - [Plusieurs pages](../docs/fr/multipage.md) : trente lignes, en-têtes répétés comme artefacts et saut forcé.
 
 - [Bordures CSS1](../docs/fr/css1.md) : huit styles, quatre côtés indépendants et couleurs RGB.
+- [Espacements et retraits](../docs/fr/css1.md#espacements-et-retrait-de-première-ligne) : longueurs signées, héritage, accents combinants et première ligne.
 
 ```sh
 php -d memory_limit=512M examples/generate.php _build/examples
@@ -38,3 +39,25 @@ la politique radio statique. La sortie est une page A4 exacte sans marges de pag
 supplémentaires ; les marges source restent appliquées. Le guide lié détaille
 l’installation des navigateurs et les exclusions de l’oracle. Cet exemple ne
 termine pas la qualification CSS1.
+
+L’[exemple d’espacements](sources/text-spacing.html) fournit explicitement la
+police de test Noto Sans et possède son propre générateur. Il conserve ensemble
+les empreintes de source, police, PDF et validation. Exécuter la mesure navigateur
+indépendante avant l’oracle PDF :
+
+```sh
+php -d memory_limit=512M examples/generate-text-spacing.php _build/text-spacing
+node tools/validate_text_spacing.cjs _build/text-spacing/browser
+python tools/validate_text_spacing.py --pdf _build/text-spacing/text-spacing.pdf \
+  --manifest _build/text-spacing/manifest.json \
+  --browser-report _build/text-spacing/browser/browser-report.json \
+  --output _build/text-spacing/pdf
+```
+
+![Première page du PDF natif des espacements](previews/text-spacing.png)
+
+L’oracle PDF contrôle coordonnées des glyphes, Unicode et annotations de lien,
+y compris la continuation native sur une nouvelle page. Les comparaisons
+navigateur portent sur une page continue, sans annoncer l’équivalence de leur
+pagination. Le [guide CSS1](../docs/fr/css1.md) précise installation, tests négatifs
+des oracles et contextes encore absents.

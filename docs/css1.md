@@ -1,6 +1,64 @@
-# CSS1: native float example and independent borders
+# CSS1: text spacing, floats and borders
 
 [English](css1.md) · [Français](fr/css1.md)
+
+## Text spacing and first-line indentation
+
+Version 0.4 adds `word-spacing`, `letter-spacing` and `text-indent` to the native
+PHP layout. These properties accept signed supported lengths and inherit their
+computed values. Spacing also accepts `normal`; indentation additionally accepts
+percentages. The [usage guide](usage.md#text-spacing-and-first-line-indentation)
+describes their values and limits.
+
+[HTML source](../examples/sources/text-spacing.html) ·
+[Generator](../examples/generate-text-spacing.php)
+
+![First page of the native text spacing PDF](../examples/previews/text-spacing.png)
+
+```css
+p { word-spacing: 2px; letter-spacing: .05em; text-indent: 10%; }
+p.tight { word-spacing: -1px; letter-spacing: -.02em; text-indent: -12px; }
+```
+
+The example uses explicitly supplied Noto Sans and includes positive/negative
+spacing, nonbreaking spaces, inherited `em` lengths, combining marks, ligatures
+and first-line indentation. It also exercises a paragraph continuing onto a new
+PDF page. Its source and font hashes are recorded in the generation manifest.
+
+```sh
+php -d memory_limit=512M examples/generate-text-spacing.php _build/text-spacing
+node tools/validate_text_spacing.cjs _build/text-spacing/browser
+python tools/validate_text_spacing.py --pdf _build/text-spacing/text-spacing.pdf \
+  --manifest _build/text-spacing/manifest.json \
+  --browser-report _build/text-spacing/browser/browser-report.json \
+  --output _build/text-spacing/pdf
+python tools/test_text_spacing_oracle.py
+node tools/test_text_spacing_oracle.cjs
+```
+
+Install the pinned Python dependencies in `tools/validation-requirements.txt`,
+qpdf, Poppler and the browsers shown below. Independent checks cover PDF glyph
+positions and Unicode mappings, annotation bounds, browser text geometry and
+rendered pages. Browser witnesses measure continuous-page geometry; they do not
+establish equivalence with browser print pagination.
+
+The implemented letter-spacing convention adds an advance after each grapheme,
+including the final grapheme of a run, as witnessed in Chromium and Firefox.
+There is no added space between a base character and its combining marks.
+`normal` and explicit zero retain identical shaping; nonzero letter spacing
+suppresses optional ligatures. These selected observations do not claim complete
+CSS Text module support. Text stays selectable and the same adjusted advances
+serve line breaking, drawing, decorations and link annotations.
+
+The percentage indent uses the content width of the block containing the lines,
+not a line's temporary width beside a float. The indent is not restarted by a
+`br`, page break or later anonymous inline fragment after an in-flow child block.
+A descendant block has its own first-line rule. Text transformation, justification,
+complete font matching and the remaining decoration contexts are still pending.
+An excessive negative spacing that produces a negative total run advance is
+rejected explicitly. Preserved tabs with nonzero letter or word spacing also
+raise `UnsupportedFeature`; normal-spacing tabs retain their existing profile,
+without claiming exact CSS tab-stop placement.
 
 ## Historical box / float / clear example
 
@@ -101,6 +159,6 @@ Chromium/Firefox witnesses for selected computed styles and box geometry. It
 identifies the exact candidate and tool versions. A preview alone does not prove
 browser/PDF equivalence or accessibility certification.
 
-The [coverage registry](../resources/css-coverage.json) records 49 partial and
-13 unsupported requirements. **CSS1 remains incomplete**, with text/font work
-next in the [qualification sequence](css-levels.md). No PDF/A or PDF/UA claim is made.
+The [coverage registry](../resources/css-coverage.json) records 52 partial and
+10 unsupported requirements. **CSS1 remains incomplete**, with further text/font work
+remaining in the [qualification sequence](css-levels.md). No PDF/A or PDF/UA claim is made.

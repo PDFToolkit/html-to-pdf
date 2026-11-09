@@ -4,6 +4,27 @@
 
 ## Non publié
 
+## 0.4.0 — 2026-11-09
+
+- Ajouter `word-spacing` et `letter-spacing` hérités avec normal, zéro et longueurs
+  signées, ainsi que `text-indent` signé/en pourcentage sur la première ligne
+  admissible. Conserver les longueurs relatives calculées lors de l’héritage et
+  refuser les déclarations invalides avant cascade.
+- Partager les avances ajustées du shaping entre retours, texte PDF, décorations
+  inline et annotations de lien. Conserver Unicode et accents combinants ; seules
+  les valeurs non nulles d’espacement des lettres désactivent les ligatures
+  facultatives, normal/zéro gardant leur shaping. Signaler les avances négatives
+  et graphèmes inter-spans non pris en charge.
+- Conserver l’éligibilité de première ligne à travers BR, pagination et fragments
+  anonymes autour de blocs dans le flux. Calculer le pourcentage du retrait sur
+  la largeur de contenu du bloc contenant les lignes, indépendamment des
+  exclusions temporaires des flottants.
+- Ajouter exemple de texte original, contrôles PDF/Unicode/géométrie natifs,
+  témoins indépendants Chromium/Firefox et tests négatifs des oracles. Documenter
+  l’avance après le dernier graphème et les limites de comparaison de pagination.
+- Actualiser guides FR/EN et registre CSS1 : 52 exigences partielles et 10 absentes.
+  CSS1, texte/polices complets, PDF/A et PDF/UA restent non qualifiés.
+
 ## 0.3.1 - 2026-11-09
 
 - Mettre à jour la dépendance de développement verrouillée `symfony/filesystem` vers 7.4.23 pour corriger [GHSA-6prc-h956-hxjq](https://github.com/symfony/symfony/security/advisories/GHSA-6prc-h956-hxjq) dans l’outillage de style du code.

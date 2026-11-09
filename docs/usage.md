@@ -127,6 +127,51 @@ no per-character fallback, synthetic variant or filesystem lookup. The supported
 `font` shorthand expands atomically and resets omitted components. Small caps,
 size keywords, system-font keywords and relative weight matching remain absent.
 
+## Text spacing and first-line indentation
+
+```css
+p { word-spacing: .2em; letter-spacing: 1px; text-indent: 10%; }
+p.compact { word-spacing: -1px; letter-spacing: -.02em; text-indent: -12px; }
+```
+
+`word-spacing` and `letter-spacing` accept `normal`, zero and signed lengths in
+`px`, `pt`, `pc`, `mm`, `cm`, `in` or `em`; the existing `rem` extension also works.
+Percentages are rejected for spacing. `text-indent` accepts the same lengths and
+signed percentages, with zero as its initial value. `ex` remains unsupported.
+Invalid values are rejected before cascade, so a later invalid value cannot erase
+an earlier valid declaration in Report mode.
+
+All three properties inherit. Relative lengths are computed using the element's
+font size and then inherited as absolute points; increasing a child's font size
+does not recompute its inherited `em` value. Percentage indentation remains a
+percentage until layout and uses the content width of the block containing the
+lines. It is independent of a float's temporary line exclusion. Only the first
+eligible formatted line is indented: `br`, a new page and later anonymous inline
+fragments after an in-flow block do not restart the parent's indent. Descendant
+blocks still apply their own inherited or specified first-line indent.
+
+Word spacing applies to spaces U+0020 and nonbreaking spaces U+00A0 remaining
+after whitespace processing. NBSP remains unbreakable. Nonzero letter spacing
+adds an advance after each grapheme, including a final trailing advance, matching
+the selected Chromium/Firefox witnesses. It leaves combining marks attached and
+disables optional ligatures. `normal` and zero preserve the original shaping.
+These are bounded horizontal Latin/Greek/Cyrillic text capabilities, not a claim
+of complete CSS Text support. A negative total run advance is rejected. A nonzero
+letter spacing on a grapheme split between inline spans is also rejected, since shaping across those
+run boundaries is not implemented. An indent that leaves no positive line width
+fails explicitly. Preserved tabs with nonzero `letter-spacing` or `word-spacing`
+raise `UnsupportedFeature`: the existing normal-spacing tab profile is retained,
+without a claim of exact CSS tab-stop placement. The existing shaping, command
+and output budgets still apply.
+
+The same shaped advances determine wrapping, PDF text, inline backgrounds,
+underlines and link bounds. `ComputedStyle::textSpacing` exposes immutable
+`TextSpacing` values in points (`null` means `normal`);
+`ComputedStyle::textIndent` exposes a signed `TextIndent` with its percentage flag.
+The [text example and independent checks](css1.md#text-spacing-and-first-line-indentation)
+show the implemented behavior. Justification, text transformation, full font
+matching and additional decorations remain outside this milestone.
+
 ## Bounded floats and static controls
 
 `float:left/right` requires an explicit width, including supported percentages.

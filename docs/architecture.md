@@ -76,3 +76,13 @@ fetching a DTD. `HtmlDocument::canvasBackground` separates the page canvas from
 body decoration. An opt-in `RadioButton` drawing becomes vector operators and
 logical Form/PrintField attributes, with no PDF field or action. The historical
 fixture's independent browser/PDF oracles do not import the PHP layout model.
+
+`TextValues` validates signed spacing/indentation without weakening non-negative
+box lengths. `TextSpacing` retains `normal` distinctly from zero while inheriting
+computed points; `TextIndent` retains signed percentages until line-container
+geometry is known. Text drawing commands carry spacing through translation and
+pagination. Font shaping, line measurement, rendering and link bounds share the
+same adjusted advances, with optional ligatures disabled only for nonzero letter
+spacing. Grapheme boundaries keep combining marks attached; unsupported
+cross-run graphemes and negative total advances fail explicitly. First-line
+eligibility belongs to the block flow, so later fragments do not restart an indent.

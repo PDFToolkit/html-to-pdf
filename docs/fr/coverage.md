@@ -2,7 +2,7 @@
 
 [English](../coverage.md) · [Français](coverage.md)
 
-La version 0.3 étend le moteur natif avec flottants bornés, familles CSS explicites et fond de page. **Elle ne couvre
+La version 0.4 étend le moteur natif avec espacements signés du texte et retrait de première ligne. **Elle ne couvre
 pas encore intégralement CSS1, CSS2 ni un module CSS moderne complet.** Le travail
 suit la [progression par niveaux](css-levels.md). Les capacités de niveaux
 ultérieurs déjà présentes restent des extensions explicites ; elles ne comblent
@@ -15,7 +15,7 @@ pas les exigences CSS1 absentes.
 | Sélecteurs | Type/classe/ID, identifiants échappés, groupes, descendants/enfants/frères et sélecteurs structurels pris en charge par Symfony. Listes validées intégralement et arbres bornés. | Pseudo-éléments et états interactifs/de liens encore refusés ; pas de couverture complète de Selectors. |
 | Média | Sélection print/all simple, exclusion des règles screen. | Pas de caractéristiques média ni `@page` ; page configurée par objet explicite. |
 | Polices | Vraies variantes regular/bold/italic/bold-italic TrueType statiques, noms de familles ordonnés et génériques explicitement associés, raccourci `font` pris en charge atomiquement, incorporation, GSUB/GPOS et Unicode sélectionnable. | Pas de recherche système, remplacement par caractère, petites capitales, tailles par mots-clés, correspondance relative/complète des graisses, fontes variables, WOFF, CFF, bidi ou scripts complexes. |
-| Texte | Normal/nowrap/pre/pre-wrap, sauts explicites, alignement gauche/centre/droite, soulignement, mesure après shaping, espaces insécables et interlignes explicites, y compris demi-interligne négatif. | Pas de justification, découpage automatique des mots, césure, espacements, transformation/retrait, first-letter/first-line ou vertical-align inline. |
+| Texte | Normal/nowrap/pre/pre-wrap, sauts explicites, alignement gauche/centre/droite, soulignement, mesure après shaping, espaces insécables, espacements signés des mots/lettres, retrait de première ligne hérité en longueur/pourcentage et interlignes explicites, y compris demi-interligne négatif. | Pas de justification, découpage automatique des mots, césure, transformation du texte, overline/line-through, first-letter/first-line ou vertical-align inline. Espacements en pourcentage, avances totales négatives et espacement de lettres non nul sur un graphème partagé entre spans refusés. Les tabulations préservées avec espacement de mots/lettres non nul lèvent `UnsupportedFeature` ; le profil existant à espacement normal reste inchangé, sans qualification exacte des taquets CSS. Un retrait sans largeur de ligne positive échoue ; qualification complète par valeur/contexte encore ouverte. |
 | Couleurs | RGB entier/pourcentage validé et borné, hexadécimal 3/6 chiffres, noms pris en charge, currentColor, fonds/bordures transparents. | Pas d’alpha arbitraire, dégradés, images de fond, couleurs CSS ICC ou toutes les fonctions modernes. |
 | Boîtes | Longueurs positives, largeurs en pourcentage, flux bloc/inline, fusion des marges positives entre frères/parents/blocs vides, padding, côtés de bordure indépendants, huit styles visibles plus none, fonds, propagation html/body au fond de page et hauteurs explicites. Le profil borné avec flottants conserve le débordement visible ; le flux ordinaire le refuse encore. | Pas de marges négatives/auto/pourcentage, padding/hauteurs en pourcentage, boîtes inline décorées, positionnement, flex ou grid. |
 | Flottants | Largeur explicite, placement gauche/droite, contextes imbriqués, exclusion des lignes, dégagement left/right/both, suppression des marqueurs avec `display:block`. | Tout document contenant des flottants visibles doit tenir sur une page ; pas de fragmentation des flottants, combinaison avec tableaux, largeur intrinsèque ou fusion parent-enfant des marges dans ces contextes. Blocs ordinaires décorés chevauchant un flottant antérieur et flottants introduits après du texte sur la même ligne refusés. |
@@ -26,8 +26,8 @@ pas les exigences CSS1 absentes.
 | Images | PNG/JPEG explicites ; proportions intrinsèques ou dimensions imposées, transparence PNG, alternative textuelle/artefact décoratif. | Pas de téléchargement implicite ni prise en charge automatique de formats arbitraires. |
 | PDF | PDF 1.7, polices incorporées, métadonnées/langue, arbre de structure, MCR par page, annotations URI avec OBJR, artefacts. | Aucune conformité PDF/A ou PDF/UA annoncée ; pas de champs, signatures ou destinations internes dans ce module. |
 
-Les [exemples CSS1](css1.md) montrent les bordures et le cas historique choisi avec flottants.
-Le registre contient 49 entrées `partial` et 13 `unsupported`, aucune entièrement
+Les [exemples CSS1](css1.md) montrent espacements/retraits, bordures et cas historique choisi avec flottants.
+Le registre contient 52 entrées `partial` et 10 `unsupported`, aucune entièrement
 qualifiée. Les preuves de release identifient le candidat exact et les outils.
 
 Les listes de définitions conservent `dl/dt/dd` dans le modèle source et les

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "0.3.0",
+  "packageVersion": "0.4.0",
   "activeStage": "css1",
   "stageOrder": [
     "css1",
@@ -236,12 +236,19 @@
       "name": "word-spacing",
       "section": "5.4.1",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#word-spacing",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "2pt",
       "context": "div",
-      "note": "Inter-word spacing is not implemented.",
+      "note": "Inherited normal or signed absolute/font-relative lengths; applies to U+0020 and U+00A0 after whitespace processing. Layout, painting and link bounds share the adjusted shaped advances. Percentage values and a negative total run advance remain unsupported; full context qualification is pending. Preserved tabs with nonzero spacing are explicitly rejected; normal-spacing tabs retain the existing unqualified tab-stop profile.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/TextPropertiesTest.php",
+        "tests/Font/TextSpacingTest.php",
+        "tests/Rendering/TextSpacingTest.php",
+        "tests/Layout/TextLayoutTest.php",
+        "tests/Layout/ListTextSpacingTest.php",
+        "tools/validate_text_spacing.py",
+        "tools/validate_text_spacing.cjs"
       ]
     },
     {
@@ -250,12 +257,19 @@
       "name": "letter-spacing",
       "section": "5.4.2",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#letter-spacing",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "1pt",
       "context": "div",
-      "note": "Inter-character spacing is not implemented.",
+      "note": "Inherited normal or signed absolute/font-relative lengths. Nonzero spacing follows grapheme boundaries, including a trailing advance, without separating a base from combining marks; optional ligatures are disabled. Normal and zero preserve the original shaping. This convention has selected browser/PDF witnesses, not full CSS Text qualification. Nonzero spacing across graphemes split between inline runs and negative total run advances are rejected. Preserved tabs with nonzero spacing are explicitly rejected; normal-spacing tabs retain the existing unqualified tab-stop profile.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/TextPropertiesTest.php",
+        "tests/Font/TextSpacingTest.php",
+        "tests/Rendering/TextSpacingTest.php",
+        "tests/Layout/TextLayoutTest.php",
+        "tests/Layout/ListTextSpacingTest.php",
+        "tools/validate_text_spacing.py",
+        "tools/validate_text_spacing.cjs"
       ]
     },
     {
@@ -320,12 +334,17 @@
       "name": "text-indent",
       "section": "5.4.7",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#text-indent",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "12pt",
       "context": "div",
-      "note": "First-line indentation is not implemented.",
+      "note": "Inherited signed absolute/font-relative lengths or deferred percentages of the line-containing block content width. Only its first eligible formatted line is indented, without restarting after a BR, pagination or an intervening in-flow block. Selected float, alignment and fragmentation contexts are tested; full CSS1 qualification is pending. An indent leaving no positive line width is explicitly rejected.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/TextPropertiesTest.php",
+        "tests/Layout/TextLayoutTest.php",
+        "tests/Layout/ListTextSpacingTest.php",
+        "tools/validate_text_spacing.py",
+        "tools/validate_text_spacing.cjs"
       ]
     },
     {

@@ -6,7 +6,9 @@
    à jour guides, couverture et historique dans les deux langues. N’utiliser
    que des dépendances stables, sans surcharge path/VCS.
 2. Vérifier Composer, plateforme, audit, PHPUnit, PHPStan et style. Générer tous
-   les exemples puis exécuter l’oracle indépendant qpdf/pypdf/Poppler. Inspecter
+   les exemples puis exécuter l’oracle indépendant qpdf/pypdf/Poppler. Inclure
+   mesures navigateur et oracle PDF des espacements décrits dans `docs/fr/css1.md`,
+   avec leurs tests négatifs. Inspecter
    chaque page rendue ; conserver versions des outils, empreintes PDF et rapports.
    Un contrôle de syntaxe ne constitue pas une certification PDF/UA ou PDF/A.
 3. Exiger une CI réussie sur PHP 8.3, 8.4 et 8.5 pour le commit candidat exact.

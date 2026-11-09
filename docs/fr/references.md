@@ -2,7 +2,7 @@
 
 [English](../references.md) · [Français](references.md)
 
-Révision du 2 novembre 2026. Cette implémentation indépendante sous licence MIT
+Révision du 9 novembre 2026. Cette implémentation indépendante sous licence MIT
 s’appuie sur les spécifications primaires HTML/CSS pour définir son profil pris
 en charge. Ses exemples emploient des illustrations originales et des polices
 avec leur propre licence.
@@ -15,6 +15,7 @@ avec leur propre licence.
 | [Erreurs syntaxiques CSS](https://www.w3.org/TR/CSS2/syndata.html#parsing-errors) | Rejet local des déclarations et récupération bornée, sans annoncer tous les cas navigateur. |
 | [Imports et cascade CSS](https://www.w3.org/TR/CSS2/cascade.html#at-import) | Ordre des imports, identité relative des feuilles, spécificité et importance. Le catalogue explicite remplace tout téléchargement. |
 | [Bordures CSS](https://www.w3.org/TR/CSS2/box.html#border-properties) | Côtés indépendants et raccourcis ; le module précise ses largeurs par mots-clés et contextes admis. |
+| [Texte CSS 2.1](https://www.w3.org/TR/2011/REC-CSS2-20110607/text.html) | Définitions communes des espacements hérités et du retrait de première ligne. Les témoins navigateur/PDF délimitent la géométrie implémentée, sans qualification complète du texte. |
 | [CSS Cascade 5](https://www.w3.org/TR/css-cascade-5/) | Cascade et héritage ; sans prétention de couvrir tous niveaux, couches ou portées. |
 | [CSS Values 4](https://www.w3.org/TR/css-values-4/#absolute-lengths) | Conversion absolue : 1in = 96px = 72pt. |
 | [CSS Fragmentation 3](https://www.w3.org/TR/css-break-3/) | Sauts de page, veuves et orphelines dans le profil pris en charge. |

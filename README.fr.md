@@ -7,23 +7,24 @@ fondé sur le cœur PDFToolkit. Il produit du texte Unicode sélectionnable, des
 polices TrueType incorporées, des images et une structure logique PDF sans
 navigateur ni moteur JavaScript.
 
-La version 0.3 étend le profil d’entrée natif documenté. La couverture HTML/CSS
+La version 0.4 étend le profil d’entrée natif documenté. La couverture HTML/CSS
 reste partielle et les fonctions absentes sont refusées par défaut. Consulter la [couverture](docs/fr/coverage.md),
 l’[architecture](docs/fr/architecture.md) et les [exemples](examples/README.fr.md).
 Un PDF balisé ne constitue pas une certification PDF/UA ou PDF/A. Le travail suit
 [CSS1 → CSS2 → CSS2.1 → modules](docs/fr/css-levels.md), avec des critères de qualification explicites.
 
-La version 0.3 ajoute les flottants gauche/droite bornés et leur dégagement, les
-familles CSS explicites, le raccourci `font` pris en charge et le fond de page.
-Les [exemples CSS1](docs/fr/css1.md) comprennent la source historique inchangée
-boîtes/flottants/dégagement et son rendu PDF natif. Les boutons radio demandent
-une option explicite d’instantané statique. Le registre compte 49 exigences
-partielles et 13 absentes ; **CSS1 complet reste non qualifié**.
+La version 0.4 ajoute `word-spacing`, `letter-spacing` et le retrait de première
+ligne `text-indent`, avec longueurs signées héritées et retrait en pourcentage.
+Les [exemples CSS1](docs/fr/css1.md) montrent ces propriétés de texte, les bordures
+indépendantes et le cas historique boîtes/flottants/dégagement. Le texte reste
+sélectionnable et les annotations de lien suivent sa géométrie ajustée. Le
+registre compte 52 exigences partielles et 10 absentes ; **CSS1 complet reste
+non qualifié**.
 
 ## Installation
 
 ```sh
-composer require pdftoolkit/html-to-pdf:^0.3
+composer require pdftoolkit/html-to-pdf:^0.4
 ```
 
 Le core est installé sous son nom Composer canonique `pdftoolkit/pdf:^0.12.2`.

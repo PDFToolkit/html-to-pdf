@@ -1,6 +1,67 @@
-# CSS1 : exemple natif avec flottants et bordures indépendantes
+# CSS1 : espacements, flottants et bordures
 
 [English](../css1.md) · [Français](css1.md)
+
+## Espacements et retrait de première ligne
+
+La version 0.4 ajoute `word-spacing`, `letter-spacing` et `text-indent` à la mise
+en page PHP native. Ces propriétés acceptent les longueurs signées prises en
+charge et héritent de leurs valeurs calculées. Les espacements acceptent aussi
+`normal` ; le retrait admet en plus les pourcentages. Le [guide](usage.md#espacements-et-retrait-de-première-ligne)
+précise leurs valeurs et limites.
+
+[Source HTML](../../examples/sources/text-spacing.html) ·
+[Générateur](../../examples/generate-text-spacing.php)
+
+![Première page du PDF natif des espacements](../../examples/previews/text-spacing.png)
+
+```css
+p { word-spacing: 2px; letter-spacing: .05em; text-indent: 10%; }
+p.tight { word-spacing: -1px; letter-spacing: -.02em; text-indent: -12px; }
+```
+
+L’exemple fournit explicitement Noto Sans et comprend espacements positifs et
+négatifs, espaces insécables, longueurs `em` héritées, accents combinants,
+ligatures et retraits de première ligne. Un paragraphe se poursuit également sur
+une nouvelle page PDF. Le manifeste conserve les empreintes de la source et de
+la police.
+
+```sh
+php -d memory_limit=512M examples/generate-text-spacing.php _build/text-spacing
+node tools/validate_text_spacing.cjs _build/text-spacing/browser
+python tools/validate_text_spacing.py --pdf _build/text-spacing/text-spacing.pdf \
+  --manifest _build/text-spacing/manifest.json \
+  --browser-report _build/text-spacing/browser/browser-report.json \
+  --output _build/text-spacing/pdf
+python tools/test_text_spacing_oracle.py
+node tools/test_text_spacing_oracle.cjs
+```
+
+Installer les dépendances Python verrouillées dans `tools/validation-requirements.txt`,
+qpdf, Poppler et les navigateurs indiqués plus bas. Les contrôles indépendants
+portent sur positions des glyphes PDF et correspondances Unicode, annotations de
+lien, géométrie du texte navigateur et pages rendues. Les témoins navigateur
+mesurent une page continue ; ils ne démontrent pas l’équivalence de leur
+pagination d’impression avec celle du PDF.
+
+La convention implémentée ajoute l’espacement après chaque graphème, dernier
+graphème d’un fragment compris, comme observé dans Chromium et Firefox. Aucun
+espace n’est ajouté entre une lettre et ses accents combinants. `normal` et zéro
+explicite conservent le même shaping ; un espacement de lettres non nul supprime
+les ligatures facultatives. Ces observations ciblées n’annoncent pas CSS Text
+complet. Le texte reste sélectionnable et ses avances ajustées servent ensemble
+aux retours, au dessin, aux décorations et aux annotations de lien.
+
+Le retrait en pourcentage utilise la largeur de contenu du bloc contenant les
+lignes, pas leur largeur temporaire à côté d’un flottant. Le retrait ne recommence
+pas après un `br`, un saut de page ou un fragment inline anonyme suivant un bloc
+enfant dans le flux. Un bloc descendant possède sa propre règle de première
+ligne. Transformation, justification, sélection complète des polices et autres
+contextes de décoration restent à réaliser. Un espacement négatif excessif
+produisant une avance totale négative est refusé explicitement. Les tabulations
+préservées avec un espacement de lettres ou de mots non nul lèvent aussi
+`UnsupportedFeature` ; leur profil à espacement normal reste inchangé, sans
+annonce de placement exact des taquets CSS.
 
 ## Exemple historique de boîtes, flottants et dégagement
 
@@ -105,7 +166,7 @@ de chaque page et les témoins Chromium/Firefox de styles calculés et de géom�
 Elles identifient le candidat exact et les versions des outils. Un aperçu ne
 prouve ni l’équivalence navigateur/PDF ni une certification d’accessibilité.
 
-Le [registre](../../resources/css-coverage.json) compte 49 exigences partielles
-et 13 absentes. **CSS1 reste incomplet** ; le texte et les polices constituent la
-prochaine étape de la [progression](css-levels.md). Aucune conformité PDF/A ou
-PDF/UA n’est annoncée.
+Le [registre](../../resources/css-coverage.json) compte 52 exigences partielles
+et 10 absentes. **CSS1 reste incomplet** ; les prochaines étapes sur le texte et
+les polices figurent dans la [progression](css-levels.md). Aucune conformité
+PDF/A ou PDF/UA n’est annoncée.

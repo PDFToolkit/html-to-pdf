@@ -6,7 +6,8 @@
 - [Catalogue](../docs/catalogue.md): three original images, wrapping and alternatives.
 - [Multiple pages](../docs/multipage.md): thirty rows, repeated header artifacts and forced break.
 
-- [CSS1 borders](../docs/css1.md): eight styles, four independent sides and RGB colors.
+- [CSS1 borders](../docs/css1.md#independent-border-sides): eight styles, four independent sides and RGB colors.
+- [Text spacing and indentation](../docs/css1.md#text-spacing-and-first-line-indentation): signed lengths, inherited styles, combining marks and first-line behavior.
 
 ```sh
 php -d memory_limit=512M examples/generate.php _build/examples
@@ -37,3 +38,23 @@ and hashes. The manifest also identifies the explicit fallback font and static
 radio policy. The output is one exact A4 page with zero additional page margins;
 source margins remain in effect. See the linked guide for browser setup and the
 precise oracle exclusions. This example does not complete CSS1 qualification.
+
+The [text spacing example](sources/text-spacing.html) uses the explicit Noto Sans
+test face and a separate generator. It keeps the source, font, PDF and validation
+hashes together. Run the independent browser measurement before the PDF oracle:
+
+```sh
+php -d memory_limit=512M examples/generate-text-spacing.php _build/text-spacing
+node tools/validate_text_spacing.cjs _build/text-spacing/browser
+python tools/validate_text_spacing.py --pdf _build/text-spacing/text-spacing.pdf \
+  --manifest _build/text-spacing/manifest.json \
+  --browser-report _build/text-spacing/browser/browser-report.json \
+  --output _build/text-spacing/pdf
+```
+
+![First page of the native text spacing PDF](previews/text-spacing.png)
+
+The PDF oracle checks glyph coordinates, Unicode and link annotations, including
+native page continuation. Browser comparisons concern continuous-page geometry,
+not browser pagination equivalence. The [CSS1 guide](../docs/css1.md) explains
+setup, negative oracle tests and remaining unsupported contexts.

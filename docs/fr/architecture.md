@@ -78,3 +78,15 @@ page et décoration du body. Le dessin explicite `RadioButton` devient opérateu
 vectoriels et attributs logiques Form/PrintField, sans champ PDF ni action. Les
 oracles indépendants navigateur/PDF du cas historique n’importent pas le modèle
 de mise en page PHP.
+
+`TextValues` valide espacements/retraits signés sans affaiblir les longueurs de
+boîte non négatives. `TextSpacing` distingue `normal` de zéro tout en héritant
+des points calculés ; `TextIndent` conserve les pourcentages signés jusqu’au
+calcul du bloc contenant les lignes. Les commandes de texte transmettent les
+espacements aux translations et à la pagination. Shaping, mesure, dessin et
+annotations de lien partagent les avances ajustées ; seules les valeurs non
+nulles d’espacement des lettres désactivent les ligatures facultatives. Les
+frontières de graphèmes gardent les accents attachés ; graphèmes inter-fragments
+non pris en charge et avances totales négatives échouent explicitement. La
+première ligne admissible appartient au flux du bloc ; les fragments suivants
+ne recommencent pas son retrait.
