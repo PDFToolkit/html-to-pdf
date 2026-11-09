@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CSS1 text spacing and first-line indentation</title>
+  <style>
+    body { margin: 0; font-family: sans-serif; font-size: 16px; line-height: 24px; color: #173c4b; }
+    h1 { font-weight: normal; font-size: 24px; line-height: 30px; margin: 0 0 12px; }
+    p { margin: 0 0 8px; }
+    .intro { font-size: 12px; line-height: 18px; margin-bottom: 18px; }
+    .case { width: 520px; }
+    .wide-words { word-spacing: 6px; }
+    .tight-words { word-spacing: -2px; }
+    .wide-letters { letter-spacing: 2px; }
+    .tight-letters { letter-spacing: -1px; }
+    .inherited { font-size: 20px; word-spacing: .3em; letter-spacing: .1em; }
+    .inherited span { font-size: 16px; }
+    .indent { width: 160px; margin-left: 24px; margin-bottom: 12px; }
+    .positive { text-indent: 24px; }
+    .negative { text-indent: -12px; }
+    .percent { text-indent: 10%; }
+    .page { page-break-before: always; }
+    .continuation { width: 180px; text-indent: 24px; line-height: 160px; }
+    a { color: #173c4b; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <h1>CSS1: space, rhythm and first lines</h1>
+  <p class="intro">Explicit font bytes, selectable Unicode text and an independent browser/PDF geometry witness. Values below use CSS pixels; 1px = 0.75 PDF point.</p>
+  <p id="word-normal" class="case">W0 A B C D</p>
+  <p id="word-positive" class="case wide-words">W1 A B C D</p>
+  <p id="word-negative" class="case tight-words">W2 A B C D</p>
+  <p id="nbsp-normal" class="case">N0 A&nbsp;B&nbsp;C&nbsp;D</p>
+  <p id="nbsp-positive" class="case wide-words">N1 A&nbsp;B&nbsp;C&nbsp;D</p>
+  <p id="nbsp-negative" class="case tight-words">N2 A&nbsp;B&nbsp;C&nbsp;D</p>
+  <p id="letter-normal" class="case">L0 ABCD</p>
+  <p id="letter-positive" class="case wide-letters"><a href="https://example.org/css1-spacing">L1 ABCD</a></p>
+  <p id="letter-negative" class="case tight-letters">L2 ABCD</p>
+  <p id="combined" class="case wide-words wide-letters">C0 A B C D</p>
+  <p id="inherited" class="case inherited"><span>E0 A B C D</span></p>
+  <p id="combining-normal" class="case">M0 a&#x301;b</p>
+  <p id="combining-positive" class="case wide-letters">M1 a&#x301;b</p>
+  <p id="ligature-normal" class="case">F0 office</p>
+  <p id="ligature-positive" class="case wide-letters">F1 office</p>
+  <p id="indent-positive" class="indent positive">I0 MMMM MMMM MMMM MMMM MMMM MMMM</p>
+  <p id="indent-negative" class="indent negative">I1 MMMM MMMM MMMM MMMM MMMM MMMM</p>
+  <p id="indent-percent" class="indent percent">I2 MMMM MMMM MMMM MMMM MMMM MMMM</p>
+  <p class="intro page">Pagination witness: the first-line indent is not repeated after a page break.</p>
+  <p id="page-continuation" class="continuation">P0 AAAA BBBB CCCC DDDD EEEE FFFF GGGG HHHH IIII JJJJ KKKK LLLL MMMM NNNN OOOO PPPP QQQQ RRRR SSSS TTTT UUUU VVVV WWWW XXXX YYYY ZZZZ</p>
+</body>
+</html>
