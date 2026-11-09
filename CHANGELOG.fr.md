@@ -4,6 +4,11 @@
 
 ## Non publié
 
+## 0.3.1 - 2026-11-09
+
+- Mettre à jour la dépendance de développement verrouillée `symfony/filesystem` vers 7.4.23 pour corriger [GHSA-6prc-h956-hxjq](https://github.com/symfony/symfony/security/advisories/GHSA-6prc-h956-hxjq) dans l’outillage de style du code.
+- Conserver le code de production, les API publiques, les exigences PHP et les versions et références de tous les autres packages verrouillés.
+
 ## 0.3.0 — 2026-11-02
 
 - Ajouter les flottants gauche/droite à largeur explicite, contextes d’exclusion

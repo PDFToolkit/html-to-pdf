@@ -4,6 +4,11 @@
 
 ## Unreleased
 
+## 0.3.1 - 2026-11-09
+
+- Update the locked development dependency `symfony/filesystem` to 7.4.23, addressing [GHSA-6prc-h956-hxjq](https://github.com/symfony/symfony/security/advisories/GHSA-6prc-h956-hxjq) in the code-style toolchain.
+- Preserve production code, public APIs, PHP requirements and every other locked package version and source reference.
+
 ## 0.3.0 — 2026-11-02
 
 - Add explicit-width left/right floats, nested exclusion contexts and clearance,
