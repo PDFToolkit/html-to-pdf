@@ -84,7 +84,7 @@ final readonly class SpecifiedDeclarationValidator
                 return;
         }
         $allowed = match ($property) {
-            'font-variant' => ['normal'],
+            'font-variant' => ['normal', 'small-caps'],
             'float' => ['none', 'left', 'right'],
             'clear' => ['none', 'left', 'right', 'both'],
             'display' => ['none', 'block', 'inline', 'list-item', 'table', 'table-row-group', 'table-header-group', 'table-footer-group', 'table-row', 'table-cell', 'table-caption'],

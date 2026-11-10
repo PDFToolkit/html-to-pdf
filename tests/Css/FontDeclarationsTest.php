@@ -50,10 +50,10 @@ final class FontDeclarationsTest extends CompilerTestCase
         self::assertSame(700, $this->find($document->root, 'b')->style->fontWeight);
     }
 
-    public function testShorthandIsAtomicForAnUnsupportedVariant(): void
+    public function testShorthandIsAtomicForAnUnsupportedComponent(): void
     {
         $diagnostics = new Diagnostics(UnsupportedPolicy::Report);
-        $document = $this->compile('<p id="a">A</p>', 'p{font-size:20pt;font-weight:bold;font-family:serif;font:italic small-caps 10px sans-serif}', $this->options(policy: UnsupportedPolicy::Report), $diagnostics);
+        $document = $this->compile('<p id="a">A</p>', 'p{font-size:20pt;font-weight:bold;font-family:serif;font:italic condensed 10px sans-serif}', $this->options(policy: UnsupportedPolicy::Report), $diagnostics);
         $style = $this->find($document->root, 'a')->style;
         self::assertSame(20.0, $style->fontSize);
         self::assertSame(700, $style->fontWeight);
@@ -88,7 +88,7 @@ final class FontDeclarationsTest extends CompilerTestCase
     /** @return iterable<string,array{string}> */
     public static function invalidShorthands(): iterable
     {
-        foreach (['10px', 'italic bold bold 10px serif', 'normal normal normal normal 10px serif', '10px / serif', '10px//1 serif', '10px/0 serif', '10px/1 serif,', 'italic 0px serif', 'small-caps 10px serif', 'italic oblique 10px serif', 'oblique oblique 10px serif', 'caption', '10px serif,,sans-serif', '10px "unterminated'] as $value) {
+        foreach (['10px', 'italic bold bold 10px serif', 'normal normal normal normal 10px serif', '10px / serif', '10px//1 serif', '10px/0 serif', '10px/1 serif,', 'italic 0px serif', 'small-caps small-caps 10px serif', 'all-small-caps 10px serif', 'italic oblique 10px serif', 'oblique oblique 10px serif', 'caption', '10px serif,,sans-serif', '10px "unterminated'] as $value) {
             yield $value => [$value];
         }
     }

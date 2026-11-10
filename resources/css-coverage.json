@@ -82,12 +82,15 @@
       "name": "font-variant",
       "section": "5.2.4",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/#font-variant",
-      "status": "unsupported",
+      "status": "partial",
       "sample": "small-caps",
       "context": "div",
-      "note": "Small capitals are not implemented.",
+      "note": "normal and small-caps, inherited. A face labeled as a small-caps font is preferred and drawn as written; otherwise lowercase letters are drawn with the uppercase glyphs of the matching face at 0.8 of the font size, using the unconditional Unicode uppercase mapping of the PHP runtime and keeping the source text for extraction. The OpenType smcp feature is not used, the scale differs from one of the two browser witnesses, and no language-specific casing applies; full context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/FontVariantTest.php",
+        "tests/Font/SmallCapitalsTest.php",
+        "tests/Layout/SmallCapsLayoutTest.php"
       ]
     },
     {
@@ -131,13 +134,14 @@
       "status": "partial",
       "sample": "italic 12pt serif",
       "context": "div",
-      "note": "Atomic supported font shorthand with a size or size keyword, every weight and style value, optional line height and family list; omitted components reset. Small caps remain unsupported.",
+      "note": "Atomic supported font shorthand with a size or size keyword, every weight, style and variant value, optional line height and family list; omitted components reset. Zero sizes and the ex unit remain unsupported; full context qualification is pending.",
       "tests": [
         "tests/Css/Css1RegistryTest.php",
         "tests/Css/FontDeclarationsTest.php",
         "tests/Css/FontSizeKeywordsTest.php",
         "tests/Css/FontWeightKeywordsTest.php",
-        "tests/Css/FontStyleTest.php"
+        "tests/Css/FontStyleTest.php",
+        "tests/Css/FontVariantTest.php"
       ]
     },
     {
@@ -924,7 +928,7 @@
       "name": "font-matching",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
       "status": "partial",
-      "note": "Caller-labeled faces are matched per element in the order style, variant and weight of CSS 2.1 15.2: italic accepts oblique, other styles match exactly, a family without the style or without a binding is skipped, weights follow CSS 2.1 15.6 and never fail, and the default family supplies its best match with an informational diagnostic. A character without a glyph falls back through the candidate faces by grapheme cluster; a cluster no single face covers is divided by character and reported. Runs are shaped separately, so kerning and ligatures do not cross a font change, and the line box keeps the metrics of the first face. A character absent from every supplied face raises UnsupportedFeature instead of the missing-character symbol CSS 2.1 recommends. Small-caps are absent; nothing is synthesized.",
+      "note": "Caller-labeled faces are matched per element in the order style, variant and weight of CSS 2.1 15.2: italic accepts oblique, other styles match exactly, a family without the style or without a binding is skipped, weights follow CSS 2.1 15.6 and never fail, and the default family supplies its best match with an informational diagnostic. A character without a glyph falls back through the candidate faces by grapheme cluster; a cluster no single face covers is divided by character and reported. Runs are shaped separately, so kerning and ligatures do not cross a font change, and the line box keeps the metrics of the first face. A character absent from every supplied face raises UnsupportedFeature instead of the missing-character symbol CSS 2.1 recommends. small-caps prefers a face labeled as a small-caps font and otherwise synthesizes scaled capitals; no weight or slant is synthesized.",
       "tests": [
         "tests/Font/FontMatcherTest.php",
         "tests/Font/FamilyFaceTest.php",

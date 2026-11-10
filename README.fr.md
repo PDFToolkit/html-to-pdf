@@ -18,7 +18,7 @@ ligne `text-indent`, avec longueurs signées héritées et retrait en pourcentag
 Les [exemples CSS1](docs/fr/css1.md) montrent ces propriétés de texte, les bordures
 indépendantes et le cas historique boîtes/flottants/dégagement. Le texte reste
 sélectionnable et les annotations de lien suivent sa géométrie ajustée. Le
-registre compte 53 exigences partielles et 9 absentes ; **CSS1 complet reste
+registre compte 54 exigences partielles et 8 absentes ; **CSS1 complet reste
 non qualifié**.
 
 ## Installation

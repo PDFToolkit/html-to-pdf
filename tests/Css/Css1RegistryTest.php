@@ -102,6 +102,7 @@ final class Css1RegistryTest extends CompilerTestCase
             'float' => self::assertSame('left', $style->float),
             'clear' => self::assertSame('both', $style->clear),
             'font-style' => self::assertTrue($style->italic),
+            'font-variant' => self::assertTrue($style->smallCaps),
             'font-weight' => self::assertSame(700, $style->fontWeight),
             'font-size' => self::assertSame(18.0, $style->fontSize),
             'color' => self::assertEquals(new Color(23 / 255, 106 / 255, 128 / 255), $style->color),
