@@ -24,6 +24,34 @@ use PHPUnit\Framework\TestCase;
 
 final class StaticRadioTest extends TestCase
 {
+    public function testRadioSnapshotInARepeatedTableHeaderIsRepaintedAsAnArtifact(): void
+    {
+        $font = new FontFace(file_get_contents(dirname(__DIR__) . '/Fixtures/fonts/NotoSans-Regular.ttf'));
+        $options = new ConversionOptions(new FontSet($font, bold: $font), new PageSettings(300, 200, new Edges(20, 20, 20, 20)), formControls: FormControls::StaticSnapshot);
+        $rows = '';
+        foreach (range(1, 30) as $index) {
+            $rows .= '<tr><td>Row ' . $index . '</td></tr>';
+        }
+        $html = '<!doctype html><html lang="en"><head><title>Repeated header</title><style>table{table-layout:fixed;width:100%}</style></head><body><form><table><thead><tr><th><input type="radio" name="a" checked> Head</th></tr></thead><tbody>' . $rows . '</tbody></table></form></body></html>';
+        $diagnostics = new Diagnostics($options->unsupported);
+        $document = (new HtmlCompiler())->parse(new HtmlSource($html), $options, $diagnostics);
+        $layout = (new LayoutEngine())->layout($document, $options, $diagnostics);
+        self::assertGreaterThan(1, count($layout->pages));
+        $tagged = 0;
+        foreach ($layout->pages as $index => $page) {
+            $radios = array_values(array_filter($page->commands, static fn($command): bool => $command instanceof RadioButton));
+            self::assertCount(1, $radios, 'the header is painted on every page');
+            self::assertTrue($radios[0]->checked);
+            self::assertSame($index === 0, $radios[0]->semanticId !== null, 'only the first occurrence belongs to the structure');
+            $tagged += $radios[0]->semanticId !== null ? 1 : 0;
+        }
+        self::assertSame(1, $tagged);
+        self::assertSame([], $diagnostics->all());
+        $data = (new DocumentInspector())->inspect((new DocumentReader())->read(new FileBytes((new Renderer())->render($layout))))->jsonSerialize();
+        self::assertFalse($data['truncated']);
+        self::assertSame([], $data['diagnostics']);
+    }
+
     public function testOriginalWitnessPreservesBothRadioSnapshotsAndTaggedSelectableText(): void
     {
         $font = new FontFace(file_get_contents(dirname(__DIR__, 2) . '/examples/assets/fonts/Lato-Regular.ttf'));

@@ -9,6 +9,7 @@ use PDF\HtmlToPdf\Diagnostics;
 use PDF\HtmlToPdf\Drawing\Command;
 use PDF\HtmlToPdf\Drawing\BorderBox;
 use PDF\HtmlToPdf\Drawing\Image;
+use PDF\HtmlToPdf\Drawing\RadioButton;
 use PDF\HtmlToPdf\Drawing\Rectangle;
 use PDF\HtmlToPdf\Drawing\Text;
 use PDF\HtmlToPdf\Exception\LimitExceeded;
@@ -138,6 +139,7 @@ final class Paginator
                     $command instanceof BorderBox => new BorderBox($command->x, $command->y, $command->width, $command->height, $command->borders, $command->offset, $command->totalHeight),
                     $command instanceof Text => $command->detached(),
                     $command instanceof Image => new Image($command->x, $command->y, $command->width, $command->height, $command->asset),
+                    $command instanceof RadioButton => new RadioButton($command->x, $command->y, $command->width, $command->height, $command->checked, $command->disabled),
                     $command instanceof Rectangle => new Rectangle($command->x, $command->y, $command->width, $command->height, $command->color, $command->borderColor, $command->borderWidth),
                     default => throw new \LogicException('Unsupported repeated table drawing command.'),
                 };
