@@ -1,0 +1,70 @@
+{
+  "default": {"faces": [
+    {"file": "tests/Fixtures/fonts/NotoSans-Regular.ttf", "weight": 400, "style": "normal"}
+  ]},
+  "families": {
+    "Lato": {"faces": [
+      {"file": "examples/assets/fonts/Lato-Regular.ttf", "weight": 400, "style": "normal"},
+      {"file": "examples/assets/fonts/Lato-Bold.ttf", "weight": 700, "style": "normal"},
+      {"file": "examples/assets/fonts/Lato-Italic.ttf", "weight": 400, "style": "italic"},
+      {"file": "examples/assets/fonts/Lato-BoldItalic.ttf", "weight": 700, "style": "italic"}
+    ]},
+    "Noto Sans": {"faces": [
+      {"file": "tests/Fixtures/fonts/NotoSans-Regular.ttf", "weight": 400, "style": "normal"}
+    ]},
+    "Ladder": {"faces": [
+      {"file": "examples/assets/fonts/Lato-Regular.ttf", "weight": 400, "style": "normal"},
+      {"file": "tests/Fixtures/fonts/NotoSans-Regular.ttf", "weight": 100, "style": "normal"},
+      {"file": "examples/assets/fonts/Lato-Bold.ttf", "weight": 900, "style": "normal"},
+      {"file": "examples/assets/fonts/Lato-Italic.ttf", "weight": 300, "style": "italic"},
+      {"file": "examples/assets/fonts/Lato-BoldItalic.ttf", "weight": 500, "style": "italic"},
+      {"file": "examples/assets/fonts/Lato-Italic.ttf", "weight": 300, "style": "oblique"},
+      {"file": "examples/assets/fonts/Lato-BoldItalic.ttf", "weight": 600, "style": "oblique"}
+    ]},
+    "Scale": {"faces": [
+      {"file": "examples/assets/fonts/Lato-Regular.ttf", "weight": 400, "style": "normal"},
+      {"file": "tests/Fixtures/fonts/NotoSans-Regular.ttf", "weight": 100, "style": "normal"},
+      {"file": "examples/assets/fonts/Lato-Italic.ttf", "weight": 500, "style": "normal"},
+      {"file": "examples/assets/fonts/Lato-Bold.ttf", "weight": 700, "style": "normal"},
+      {"file": "examples/assets/fonts/Lato-BoldItalic.ttf", "weight": 900, "style": "normal"}
+    ]},
+    "Slant": {"faces": [
+      {"file": "examples/assets/fonts/Lato-Regular.ttf", "weight": 400, "style": "normal"},
+      {"file": "examples/assets/fonts/Lato-BoldItalic.ttf", "weight": 400, "style": "oblique"}
+    ]},
+    "Engraved": {"faces": [
+      {"file": "examples/assets/fonts/Lato-Regular.ttf", "weight": 400, "style": "normal"},
+      {"file": "examples/assets/fonts/Lato-Bold.ttf", "weight": 700, "style": "normal"},
+      {"file": "tests/Fixtures/fonts/NotoSans-Regular.ttf", "weight": 400, "style": "normal", "smallCaps": true}
+    ]},
+    "Reference Lato Regular": {"faces": [
+      {"file": "examples/assets/fonts/Lato-Regular.ttf", "weight": 400, "style": "normal"}
+    ]},
+    "Reference Lato Bold": {"faces": [
+      {"file": "examples/assets/fonts/Lato-Bold.ttf", "weight": 400, "style": "normal"}
+    ]},
+    "Reference Lato Italic": {"faces": [
+      {"file": "examples/assets/fonts/Lato-Italic.ttf", "weight": 400, "style": "normal"}
+    ]},
+    "Reference Lato Bold Italic": {"faces": [
+      {"file": "examples/assets/fonts/Lato-BoldItalic.ttf", "weight": 400, "style": "normal"}
+    ]},
+    "Reference Noto Sans": {"faces": [
+      {"file": "tests/Fixtures/fonts/NotoSans-Regular.ttf", "weight": 400, "style": "normal"}
+    ]}
+  },
+  "generic": {
+    "serif": {"faces": [
+      {"file": "examples/assets/fonts/Lato-Regular.ttf", "weight": 400, "style": "normal"},
+      {"file": "examples/assets/fonts/Lato-Bold.ttf", "weight": 700, "style": "normal"},
+      {"file": "examples/assets/fonts/Lato-Italic.ttf", "weight": 400, "style": "italic"},
+      {"file": "examples/assets/fonts/Lato-BoldItalic.ttf", "weight": 700, "style": "italic"}
+    ]},
+    "sans-serif": {"faces": [
+      {"file": "tests/Fixtures/fonts/NotoSans-Regular.ttf", "weight": 400, "style": "normal"}
+    ]},
+    "fantasy": {"faces": [
+      {"file": "examples/assets/fonts/Lato-Regular.ttf", "weight": 400, "style": "normal"}
+    ]}
+  }
+}

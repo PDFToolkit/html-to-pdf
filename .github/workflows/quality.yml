@@ -50,6 +50,8 @@ jobs:
         run: python tools/validate_w3c_css1.py --pdf _build/examples/w3c/test5526c.pdf --manifest _build/examples/w3c/manifest.json --output _build/examples/w3c/validation
       - name: Convert the CSS1 spacing, Unicode and first-line indentation witness
         run: php -d memory_limit=512M examples/generate-text-spacing.php _build/examples/text-spacing
+      - name: Convert the CSS1 font sizes, matching, fallback and small-capitals witness
+        run: php -d memory_limit=512M examples/generate-fonts.php _build/examples/fonts
       - name: Reject corrupt text maps with independent mutation witnesses
         run: python tests/test_pdf_text_oracle.py --pdf _build/examples/invoice.pdf --report _build/examples/text-oracle-regressions.json
       - uses: actions/upload-artifact@v7
@@ -88,6 +90,10 @@ jobs:
         run: node tools/test_text_spacing_oracle.cjs
       - name: Observe CSS1 glyph spacing and first-line indentation in both browsers
         run: node tools/validate_text_spacing.cjs _build/styles/text-spacing
+      - name: Reject deliberately wrong font size, weight, matching and fallback observations
+        run: node tools/test_fonts_oracle.cjs
+      - name: Observe CSS1 font sizes, weights, styles and fallback in both browsers
+        run: node tools/validate_fonts.cjs _build/styles/fonts
       - uses: actions/upload-artifact@v7
         if: always()
         with:
@@ -129,9 +135,22 @@ jobs:
           --manifest _build/examples/text-spacing/manifest.json
           --browser-report _build/styles/text-spacing/browser-report.json
           --output _build/text-spacing-validation
+      - name: Verify emitted faces, sizes, glyphs and advances of the font witness
+        run: >-
+          python tools/validate_fonts.py
+          --pdf _build/examples/fonts/fonts.pdf
+          --manifest _build/examples/fonts/manifest.json
+          --browser-report _build/styles/fonts/browser-report.json
+          --output _build/fonts-validation
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: text-spacing-evidence-php-${{ matrix.php }}
           path: _build/text-spacing-validation
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: fonts-evidence-php-${{ matrix.php }}
+          path: _build/fonts-validation
           if-no-files-found: error

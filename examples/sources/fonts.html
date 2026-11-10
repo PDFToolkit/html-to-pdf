@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>CSS1 font properties, face by face</title>
+  <style>
+    body { margin: 0; font: 14px/20px Lato, "Noto Sans"; color: #1d3340; }
+    h1 { margin: 0 0 4px; font-size: 26px; line-height: 32px; color: #176a80; }
+    h2 { margin: 10px 0 2px; font-size: 15px; line-height: 20px; color: #176a80; }
+    p { margin: 0; }
+    .lead { margin-bottom: 2px; }
+    .note { font-size: 12px; line-height: 16px; color: #50626e; }
+    .row { line-height: 24px; }
+    .tall { line-height: 40px; }
+    .reference { font-size: 16px; }
+    .specimen { font-size: 20px; line-height: 30px; }
+    .xx-small { font-size: xx-small; }
+    .x-small { font-size: x-small; }
+    .small { font-size: small; }
+    .medium { font-size: medium; }
+    .large { font-size: large; }
+    .x-large { font-size: x-large; }
+    .xx-large { font-size: xx-large; }
+    .larger { font-size: larger; }
+    .smaller { font-size: smaller; }
+    .px12 { font-size: 12px; }
+    .px30 { font-size: 30px; }
+    .w100 { font-weight: 100; }
+    .w200 { font-weight: 200; }
+    .w300 { font-weight: 300; }
+    .w400 { font-weight: 400; }
+    .w500 { font-weight: 500; }
+    .w600 { font-weight: 600; }
+    .w700 { font-weight: 700; }
+    .w800 { font-weight: 800; }
+    .w900 { font-weight: 900; }
+    .bolder { font-weight: bolder; }
+    .lighter { font-weight: lighter; }
+    .ladder { font-family: Ladder; }
+    .scale { font-family: Scale; }
+    .engraved { font-family: Engraved; }
+    .slant { font-family: Slant; }
+    .italic { font-style: italic; }
+    .oblique { font-style: oblique; }
+    .caps { font-variant: small-caps; }
+    .inherited { font: italic small-caps bold 25px/50px Ladder; }
+    .page { page-break-before: always; }
+  </style>
+</head>
+<body>
+  <h1>CSS1 font properties, face by face</h1>
+  <p class="lead">Five TrueType programs are supplied as bytes and bound to labelled families by the caller; no system font is consulted. Every short line below is a measured sample of sizes, weights, styles, small capitals, per-character fallback and the font shorthand.</p>
+
+  <h2>Reference programs</h2>
+  <p class="note">Lato Regular, Lato Bold, Lato Italic, Lato Bold Italic and Noto Sans Regular, each bound alone to a one-face family. The word has a different width in every program, which identifies the face chosen on the later lines.</p>
+  <p id="row-reference" class="row reference">
+    <span id="reference-lato-regular" style="font-family: 'Reference Lato Regular'">minimum</span>
+    <span id="reference-lato-bold" style="font-family: 'Reference Lato Bold'">minimum</span>
+    <span id="reference-lato-italic" style="font-family: 'Reference Lato Italic'">minimum</span>
+    <span id="reference-lato-bold-italic" style="font-family: 'Reference Lato Bold Italic'">minimum</span>
+    <span id="reference-noto-sans" style="font-family: 'Reference Noto Sans'">minimum</span>
+  </p>
+
+  <h2>Absolute sizes</h2>
+  <p class="note">xx-small, x-small, small, medium, large, x-large and xx-large index one table: 9, 10, 13, 16, 18, 24 and 32 pixels. The parent is 12px on the first line and 30px on the second; the table does not move.</p>
+  <p id="row-absolute-12" class="row tall px12">
+    <span id="absolute-12-xx-small" class="xx-small">9</span>
+    <span id="absolute-12-x-small" class="x-small">10</span>
+    <span id="absolute-12-small" class="small">13</span>
+    <span id="absolute-12-medium" class="medium">16</span>
+    <span id="absolute-12-large" class="large">18</span>
+    <span id="absolute-12-x-large" class="x-large">24</span>
+    <span id="absolute-12-xx-large" class="xx-large">32</span>
+  </p>
+  <p id="row-absolute-30" class="row tall px30">
+    <span id="absolute-30-xx-small" class="xx-small">9</span>
+    <span id="absolute-30-x-small" class="x-small">10</span>
+    <span id="absolute-30-small" class="small">13</span>
+    <span id="absolute-30-medium" class="medium">16</span>
+    <span id="absolute-30-large" class="large">18</span>
+    <span id="absolute-30-x-large" class="x-large">24</span>
+    <span id="absolute-30-xx-large" class="xx-large">32</span>
+  </p>
+
+  <h2>Relative sizes</h2>
+  <p class="note">smaller and larger divide and multiply the inherited size by 1.2. Parents, in pairs: medium, x-large, 12px and 30px. From medium, larger gives 19.2px rather than the next table entry, large (18px).</p>
+  <p id="row-relative" class="row tall">
+    <span class="medium"><span id="smaller-from-medium" class="smaller">13.3</span></span>
+    <span class="medium"><span id="larger-from-medium" class="larger">19.2</span></span>
+    <span class="x-large"><span id="smaller-from-x-large" class="smaller">20</span></span>
+    <span class="x-large"><span id="larger-from-x-large" class="larger">28.8</span></span>
+    <span class="px12"><span id="smaller-from-12" class="smaller">10</span></span>
+    <span class="px12"><span id="larger-from-12" class="larger">14.4</span></span>
+    <span class="px30"><span id="smaller-from-30" class="smaller">25</span></span>
+    <span class="px30"><span id="larger-from-30" class="larger">36</span></span>
+  </p>
+  <p class="note">A child inherits the computed size, not the keyword: 16.8 stays 16.8 and a second larger gives 20.16. Under x-large, an undeclared child keeps 24, 50% gives 12 and .75em gives 18. Smaller from small is 10.83, not x-small.</p>
+  <p id="row-inheritance" class="row tall">
+    <span class="larger"><span id="inherited-larger">16.8</span></span>
+    <span class="larger"><span id="nested-larger" class="larger">20.16</span></span>
+    <span class="x-large"><span id="inherited-x-large">24</span></span>
+    <span class="x-large"><span id="percentage-of-x-large" style="font-size: 50%">12</span></span>
+    <span class="x-large"><span id="em-of-x-large" style="font-size: .75em">18</span></span>
+    <span class="small"><span id="smaller-from-small" class="smaller">10.83</span></span>
+  </p>
+  <p class="note">Other properties resolve em against the keyword size: the first line is indented by 2em of x-large (48px), the second by 5em of larger (84px).</p>
+  <p id="row-indent-x-large" class="row tall x-large" style="text-indent: 2em"><span id="indent-x-large">48</span></p>
+  <p id="row-indent-larger" class="row larger" style="text-indent: 5em"><span id="indent-larger">84</span></p>
+
+  <h2>Relative weights</h2>
+  <p class="note">bolder and lighter depend only on the inherited weight, 100 to 900 from left to right. Scale binds a different program to each of 100, 400, 500, 700 and 900, so every result of the chart is drawn by its own program. First line, bolder: 400, 400, 400, 700, 700, 900, 900, 900, 900. Second line, lighter: 100, 100, 100, 100, 100, 400, 400, 700, 700.</p>
+  <p id="row-bolder" class="row">
+    <span class="w100"><span id="bolder-from-100" class="bolder scale">minimum</span></span>
+    <span class="w200"><span id="bolder-from-200" class="bolder scale">minimum</span></span>
+    <span class="w300"><span id="bolder-from-300" class="bolder scale">minimum</span></span>
+    <span class="w400"><span id="bolder-from-400" class="bolder scale">minimum</span></span>
+    <span class="w500"><span id="bolder-from-500" class="bolder scale">minimum</span></span>
+    <span class="w600"><span id="bolder-from-600" class="bolder scale">minimum</span></span>
+    <span class="w700"><span id="bolder-from-700" class="bolder scale">minimum</span></span>
+    <span class="w800"><span id="bolder-from-800" class="bolder scale">minimum</span></span>
+    <span class="w900"><span id="bolder-from-900" class="bolder scale">minimum</span></span>
+  </p>
+  <p id="row-lighter" class="row">
+    <span class="w100"><span id="lighter-from-100" class="lighter scale">minimum</span></span>
+    <span class="w200"><span id="lighter-from-200" class="lighter scale">minimum</span></span>
+    <span class="w300"><span id="lighter-from-300" class="lighter scale">minimum</span></span>
+    <span class="w400"><span id="lighter-from-400" class="lighter scale">minimum</span></span>
+    <span class="w500"><span id="lighter-from-500" class="lighter scale">minimum</span></span>
+    <span class="w600"><span id="lighter-from-600" class="lighter scale">minimum</span></span>
+    <span class="w700"><span id="lighter-from-700" class="lighter scale">minimum</span></span>
+    <span class="w800"><span id="lighter-from-800" class="lighter scale">minimum</span></span>
+    <span class="w900"><span id="lighter-from-900" class="lighter scale">minimum</span></span>
+  </p>
+  <p class="note">strong and b are bolder; the samples stay in Scale. In order: strong (700); b in strong (900); under a 300 parent, b (400), strong in b (700) and b in strong in b (900); a child of bolder inherits 700, not the keyword; bold (700); normal inside b (400).</p>
+  <p id="row-nesting" class="row">
+    <strong id="strong" class="scale">minimum</strong>
+    <strong><b id="b-in-strong" class="scale">minimum</b></strong>
+    <span class="w300"><b id="b-from-300" class="scale">minimum</b></span>
+    <span class="w300"><b><strong id="strong-in-b-from-300" class="scale">minimum</strong></b></span>
+    <span class="w300"><b><strong><b id="b-in-strong-in-b-from-300" class="scale">minimum</b></strong></b></span>
+    <span class="bolder"><span id="inherited-bolder" class="scale">minimum</span></span>
+    <span id="keyword-bold" class="scale" style="font-weight: bold">minimum</span>
+    <b><span id="keyword-normal" class="scale" style="font-weight: normal">minimum</span></b>
+  </p>
+
+  <h2 class="page">Weight matching</h2>
+  <p class="note">Requested weights 100 to 900 from left to right. Lato (400, 700): five regular, four bold. Ladder (Noto Sans at 100, Lato Regular at 400, Lato Bold at 900): 300 goes down to 100 and 600 goes up to 900, where a nearest-weight rule would choose 400 both times.</p>
+  <p id="row-match-lato" class="row">
+    <span id="match-lato-100" class="w100">minimum</span>
+    <span id="match-lato-200" class="w200">minimum</span>
+    <span id="match-lato-300" class="w300">minimum</span>
+    <span id="match-lato-400" class="w400">minimum</span>
+    <span id="match-lato-500" class="w500">minimum</span>
+    <span id="match-lato-600" class="w600">minimum</span>
+    <span id="match-lato-700" class="w700">minimum</span>
+    <span id="match-lato-800" class="w800">minimum</span>
+    <span id="match-lato-900" class="w900">minimum</span>
+  </p>
+  <p id="row-match-ladder" class="row">
+    <span id="match-ladder-100" class="ladder w100">minimum</span>
+    <span id="match-ladder-200" class="ladder w200">minimum</span>
+    <span id="match-ladder-300" class="ladder w300">minimum</span>
+    <span id="match-ladder-400" class="ladder w400">minimum</span>
+    <span id="match-ladder-500" class="ladder w500">minimum</span>
+    <span id="match-ladder-600" class="ladder w600">minimum</span>
+    <span id="match-ladder-700" class="ladder w700">minimum</span>
+    <span id="match-ladder-800" class="ladder w800">minimum</span>
+    <span id="match-ladder-900" class="ladder w900">minimum</span>
+  </p>
+  <p class="note">Ladder italic (Lato Italic at 300, Lato Bold Italic at 500), requested 100 to 500: 400 tries 500 before any lighter face. Ladder oblique (Lato Italic at 300, Lato Bold Italic at 600), requested 100 to 900: 500 tries 400, then goes down to 300 although 600 is nearer.</p>
+  <p id="row-match-ladder-italic" class="row">
+    <span id="match-ladder-italic-100" class="ladder italic w100">minimum</span>
+    <span id="match-ladder-italic-200" class="ladder italic w200">minimum</span>
+    <span id="match-ladder-italic-300" class="ladder italic w300">minimum</span>
+    <span id="match-ladder-italic-400" class="ladder italic w400">minimum</span>
+    <span id="match-ladder-italic-500" class="ladder italic w500">minimum</span>
+  </p>
+  <p id="row-match-ladder-oblique" class="row">
+    <span id="match-ladder-oblique-100" class="ladder oblique w100">minimum</span>
+    <span id="match-ladder-oblique-200" class="ladder oblique w200">minimum</span>
+    <span id="match-ladder-oblique-300" class="ladder oblique w300">minimum</span>
+    <span id="match-ladder-oblique-400" class="ladder oblique w400">minimum</span>
+    <span id="match-ladder-oblique-500" class="ladder oblique w500">minimum</span>
+    <span id="match-ladder-oblique-600" class="ladder oblique w600">minimum</span>
+    <span id="match-ladder-oblique-700" class="ladder oblique w700">minimum</span>
+    <span id="match-ladder-oblique-800" class="ladder oblique w800">minimum</span>
+    <span id="match-ladder-oblique-900" class="ladder oblique w900">minimum</span>
+  </p>
+  <p class="note">A weight never fails: the one-face Noto Sans reference family, asked for 900, answers with its only face, and the converter reports the substitution.</p>
+  <p id="row-match-single" class="row"><span id="match-single-900" class="w900" style="font-family: 'Reference Noto Sans'">minimum</span></p>
+
+  <h2>Styles</h2>
+  <p class="note">In Lato: i, em, i inside b, and normal restored inside i. Then Slant, whose only slanted face is labelled oblique and carries Lato Bold Italic: italic accepts it, oblique requires it.</p>
+  <p id="row-style" class="row">
+    <i id="style-i">minimum</i>
+    <em id="style-em">minimum</em>
+    <b><i id="style-i-in-b">minimum</i></b>
+    <i><span id="style-normal-in-i" style="font-style: normal">minimum</span></i>
+    <span id="style-italic-from-oblique-face" class="slant italic">minimum</span>
+    <span id="style-oblique" class="slant oblique">minimum</span>
+  </p>
+  <p class="note">A family without the requested style is skipped. Oblique from "Lato, Slant": Lato has italic faces only, so Slant supplies its oblique face. Italic from "Noto Sans, Lato": Noto Sans has one upright face, so Lato supplies its italic.</p>
+  <p id="row-oblique-skips-italic" class="row"><span id="oblique-skips-italic" class="oblique" style="font-family: Lato, Slant">minimum</span></p>
+  <p id="row-italic-skips-upright" class="row"><span id="italic-skips-upright" class="italic" style="font-family: 'Noto Sans', Lato">minimum</span></p>
+
+  <h2 class="page">Small capitals</h2>
+  <p class="note">Lato has no small-capital glyphs: lowercase letters are drawn as capitals at 0.8 of the font size, capitals, digits and punctuation are unchanged and the sharp s becomes SS. In order: lowercase, mixed case, digits, punctuation, sharp s, bold, inherited, and normal restored inside small-caps.</p>
+  <p id="row-small-caps" class="row specimen">
+    <span id="caps-lowercase" class="caps">minimum</span>
+    <span id="caps-mixed" class="caps">Nominal</span>
+    <span id="caps-digits" class="caps">2008</span>
+    <span id="caps-punctuation" class="caps">No.3</span>
+    <span id="caps-sharp-s" class="caps">maß</span>
+    <b id="caps-bold" class="caps">minimum</b>
+    <span class="caps"><span id="caps-inherited">nominal</span></span>
+    <span class="caps"><span id="caps-restored" style="font-variant: normal">minimum</span></span>
+  </p>
+  <p class="note">Engraved binds Noto Sans as its small-caps face beside two upright Lato faces. Small-caps text takes that face as written, in bold too because the variant is matched before the weight, and normal text keeps Lato. Noto Sans on its own carries no such label: the last sample is synthesized from its capitals and its OpenType small capitals are not used.</p>
+  <p id="row-small-caps-faces" class="row specimen">
+    <span id="caps-labelled" class="caps engraved">minimum</span>
+    <b id="caps-labelled-bold" class="caps engraved">minimum</b>
+    <span id="caps-labelled-normal" class="engraved">minimum</span>
+    <span id="caps-feature" class="caps" style="font-family: 'Noto Sans'">minimum</span>
+  </p>
+
+  <h2>Fallback, character by character</h2>
+  <p class="note">A character missing from the first family is taken from the next one, then the list starts again. "Lato, Noto Sans": the double-struck R and the digamma come from Noto Sans. "Noto Sans, Lato": the arrow, the circle and the square come from Lato, and an arrow keeps its combining accent in Lato although Noto Sans has the accent. An unlisted family ends in the default family, Noto Sans; so does a character that Lato, listed alone, does not have; and an unlisted family asked for bold italic gets the only face of the default family.</p>
+  <p id="row-fallback" class="row specimen">
+    <span id="fallback-lato-noto" style="font-family: Lato, 'Noto Sans'">nℝnͷn</span>
+    <span id="fallback-noto-lato" style="font-family: Noto Sans, Lato">n→n○n▪n</span>
+    <span id="fallback-cluster" style="font-family: 'Noto Sans', Lato">n→́n</span>
+    <span id="fallback-default" style="font-family: 'Unlisted Grotesk', cursive">minimum</span>
+    <span id="fallback-character-default" style="font-family: Lato">nℝn</span>
+    <span id="fallback-default-style" style="font-family: 'Unlisted Grotesk'; font-style: italic; font-weight: bold">minimum</span>
+  </p>
+
+  <h2>The font shorthand</h2>
+  <p class="note">The five CSS1 examples, inside a parent set to italic small-caps bold 25px/50px. Omitted components return to their initial values, the line height included: each example is set twice and the distance between its two baselines is its line height. In order: 12pt/14pt sans-serif; 80% sans-serif; x-large/110% "new century schoolbook", serif; bold italic large Palatino, serif; normal small-caps 120%/120% fantasy.</p>
+  <div class="inherited">
+    <p id="row-font-1" style="font: 12pt/14pt sans-serif"><span id="font-1">minimum</span></p>
+    <p id="row-font-1-again" style="font: 12pt/14pt sans-serif"><span id="font-1-again">minimum</span></p>
+    <p id="row-font-2" style="font: 80% sans-serif"><span id="font-2">minimum</span></p>
+    <p id="row-font-2-again" style="font: 80% sans-serif"><span id="font-2-again">minimum</span></p>
+    <p id="row-font-3" style='font: x-large/110% "new century schoolbook", serif'><span id="font-3">minimum</span></p>
+    <p id="row-font-3-again" style='font: x-large/110% "new century schoolbook", serif'><span id="font-3-again">minimum</span></p>
+    <p id="row-font-4" style="font: bold italic large Palatino, serif"><span id="font-4">minimum</span></p>
+    <p id="row-font-4-again" style="font: bold italic large Palatino, serif"><span id="font-4-again">minimum</span></p>
+    <p id="row-font-5" style="font: normal small-caps 120%/120% fantasy"><span id="font-5">minimum</span></p>
+    <p id="row-font-5-again" style="font: normal small-caps 120%/120% fantasy"><span id="font-5-again">minimum</span></p>
+  </div>
+</body>
+</html>
