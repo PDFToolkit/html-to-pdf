@@ -47,14 +47,14 @@ final readonly class PreparedLayout
     private FeatureSelection $features;
     private FeatureSelection $spacedFeatures;
 
-    public function __construct(private SfntFont $font, private ReadLimits $limits)
+    public function __construct(private SfntFont $font, private ReadLimits $limits, ?UnicodeCharacterMap $map = null)
     {
         foreach (['fvar', 'CFF2'] as $tag) {
             if ($font->hasTable(new Tag($tag))) {
                 throw new \InvalidArgumentException('This adapter requires a static font instance.');
             }
         }
-        $this->map = (new UnicodeCmapReader($limits))->read($font->table(new Tag('cmap')), $font->glyphCount());
+        $this->map = $map ?? (new UnicodeCmapReader($limits))->read($font->table(new Tag('cmap')), $font->glyphCount());
         $this->metrics = (new HorizontalMetricsReader())->read($font);
         $this->definition = $font->hasTable(new Tag('GDEF')) ? (new GdefReader($limits))->read($font->table(new Tag('GDEF')), $font->glyphCount()) : null;
         $this->substitution = $font->hasTable(new Tag('GSUB')) ? (new GsubReader($limits))->read($font->table(new Tag('GSUB')), $font->glyphCount()) : null;

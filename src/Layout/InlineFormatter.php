@@ -15,6 +15,8 @@ use PDF\HtmlToPdf\Exception\UnsupportedFeature;
 use PDF\HtmlToPdf\Font\FaceChain;
 use PDF\HtmlToPdf\Font\FontFace;
 use PDF\HtmlToPdf\Font\FontMatcher;
+use PDF\HtmlToPdf\Font\TextItemizer;
+use PDF\HtmlToPdf\Font\TextSegment;
 use PDF\HtmlToPdf\Style\ComputedStyle;
 use PDF\HtmlToPdf\Style\FontSlant;
 use PDF\HtmlToPdf\Style\TextSpacing;
@@ -29,6 +31,9 @@ final class InlineFormatter
     private int $lineCount = 0;
     private int $commandCount = 0;
     private readonly FontMatcher $matcher;
+    private readonly TextItemizer $itemizer;
+    /** @var array<string, list<TextSegment>> */
+    private array $itemizations = [];
     /** @var \WeakMap<ComputedStyle, FaceChain> */
     private \WeakMap $chains;
     /** @var array<string, FaceChain> */
@@ -43,7 +48,75 @@ final class InlineFormatter
     public function __construct(private readonly ConversionOptions $options, private readonly ?Diagnostics $diagnostics = null)
     {
         $this->matcher = new FontMatcher();
+        $this->itemizer = new TextItemizer();
         $this->chains = new \WeakMap();
+    }
+
+    /** Advance of one styled text, summed over the faces font matching assigns to its characters. */
+    public function advance(string $text, ComputedStyle $style): float
+    {
+        $width = 0.0;
+        foreach ($this->segments($text, $style) as $segment) {
+            $width += $this->measure($segment->face->face, $segment->text, $style->fontSize, $style->textSpacing);
+        }
+
+        return $width;
+    }
+
+    /**
+     * One text command per face, positioned with the advances that line breaking measured.
+     *
+     * @return array{list<Text>, float} The commands and their total advance.
+     */
+    public function texts(string $text, ComputedStyle $style, float $x, float $baseline, ?string $semanticId, ?string $uri = null): array
+    {
+        $commands = [];
+        $start = $x;
+        foreach ($this->segments($text, $style) as $segment) {
+            $commands[] = new Text($segment->face->face, $segment->text, $style->fontSize, $x, $baseline, $style->color, $semanticId, $uri, $style->textSpacing);
+            $x += $this->measure($segment->face->face, $segment->text, $style->fontSize, $style->textSpacing);
+        }
+
+        return [$commands, $x - $start];
+    }
+
+    /**
+     * Character fallback across the face chain. A single candidate needs no coverage probe,
+     * so text in one supplied face keeps the single run it always had.
+     *
+     * @return list<TextSegment>
+     */
+    private function segments(string $text, ComputedStyle $style): array
+    {
+        $chain = $this->chain($style);
+        if (count($chain->faces) === 1) {
+            return [new TextSegment($chain->primary(), $text)];
+        }
+        $this->measuredBytes += strlen($text);
+        if ($this->measuredBytes > $this->options->limits->maxTextCharacters * 256) {
+            throw new LimitExceeded('Cumulative text shaping work budget exhausted.');
+        }
+        $key = spl_object_id($chain) . ':' . $text;
+        $segments = $this->itemizations[$key] ?? null;
+        if ($segments === null) {
+            $segments = $this->itemizer->itemize($text, $chain);
+            $entryBytes = strlen($key) + 64 * count($segments);
+            if (count($this->itemizations) < $this->options->limits->maxCommands
+                && $this->cachedBytes + $entryBytes <= min(4_194_304, $this->options->limits->maxTextCharacters * 16)) {
+                $this->itemizations[$key] = $segments;
+                $this->cachedBytes += $entryBytes;
+            }
+        }
+        foreach ($segments as $segment) {
+            if ($segment->split) {
+                if (($style->textSpacing->letterSpacing ?? 0.0) !== 0.0) {
+                    throw new UnsupportedFeature('Letter spacing across a grapheme divided between fonts requires shared cluster shaping.');
+                }
+                $this->note('font.cluster-split', 'No single face of ' . ($style->fontFamily->names === [] ? 'the default family' : $style->fontFamily->css()) . ' has every character of a grapheme cluster; its characters are drawn with different fonts.');
+            }
+        }
+
+        return $segments;
     }
 
     /** @param list<InlinePiece> $pieces
@@ -248,7 +321,7 @@ final class InlineFormatter
     {
         $width = 0.0;
         foreach ($pieces as $piece) {
-            $width += $piece->radio->width ?? ($piece->image !== null ? $piece->imageWidth : $this->measure($this->face($piece->style), $piece->text, $piece->style->fontSize, $piece->style->textSpacing));
+            $width += $piece->radio->width ?? ($piece->image !== null ? $piece->imageWidth : $this->advance($piece->text, $piece->style));
         }
 
         return $width;
@@ -302,12 +375,11 @@ final class InlineFormatter
                 $x += $piece->imageWidth;
                 continue;
             }
-            $font = $this->face($piece->style);
-            $runWidth = $this->measure($font, $piece->text, $piece->style->fontSize, $piece->style->textSpacing);
+            [$texts, $runWidth] = $this->texts($piece->text, $piece->style, $x, $baseline, $piece->semanticId ?? throw new \LogicException('Text needs structure.'), $piece->uri);
             if ($piece->style->background !== null) {
                 $commands[] = new Rectangle($x, 0, $runWidth, $height, $piece->style->background);
             }
-            $commands[] = new Text($font, $piece->text, $piece->style->fontSize, $x, $baseline, $piece->style->color, $piece->semanticId ?? throw new \LogicException('Text needs structure.'), $piece->uri, $piece->style->textSpacing);
+            array_push($commands, ...$texts);
             if ($piece->style->underline && $runWidth > 0) {
                 $commands[] = new Rectangle($x, min($height - 0.5, $baseline + $piece->style->fontSize * 0.1), $runWidth, max(0.5, $piece->style->fontSize / 16), $piece->style->color);
             }

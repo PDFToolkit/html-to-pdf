@@ -73,7 +73,7 @@ final class FlowBuilder
             throw new UnsupportedFeature('A block box exceeds its available width.');
         }
         $innerX = $outerX + $edges->left + $s->padding->left;
-        $markerWidth = $marker === null ? 0.0 : max(18.0, $this->inline->face($s)->measure($marker . ' ', $s->fontSize, $s->textSpacing));
+        $markerWidth = $marker === null ? 0.0 : max(18.0, $this->inline->advance($marker . ' ', $s));
         if ($node->tag === 'table') {
             if ($floats !== null) {
                 throw new UnsupportedFeature('Combining table formatting and floats is outside this layout profile.');
@@ -109,7 +109,7 @@ final class FlowBuilder
                     break;
                 }
             }
-            array_unshift($first->commands, new Text($font, $marker, $s->fontSize, $innerX, $baseline, $s->color, $label, $uri, $s->textSpacing));
+            array_unshift($first->commands, ...$this->inline->texts($marker, $s, $innerX, $baseline, $label, $uri)[0]);
         }
         $flow = $this->margins->collapse($flow);
         $topMargin = new FlowItem($s->margin->top);

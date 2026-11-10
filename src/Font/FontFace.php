@@ -54,6 +54,16 @@ final readonly class FontFace
         return new FontRun($this, $shaped, $size, $width, $metrics, $spacing);
     }
 
+    /** Whether the face maps one Unicode code point to a glyph, as the shaper will see it. */
+    public function hasGlyph(int $codePoint): bool
+    {
+        try {
+            return $this->layout->covers($codePoint);
+        } catch (\InvalidArgumentException|\RuntimeException $error) {
+            throw new UnsupportedFeature('The character map of the selected font cannot be read: ' . $error->getMessage(), previous: $error);
+        }
+    }
+
     public function metrics(float $size): FontMetrics
     {
         if (!is_finite($size) || $size <= 0 || $size > 10_000) {
