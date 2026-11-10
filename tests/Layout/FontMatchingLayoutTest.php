@@ -8,14 +8,18 @@ use PDF\HtmlToPdf\ConversionOptions;
 use PDF\HtmlToPdf\Diagnostic;
 use PDF\HtmlToPdf\Diagnostics;
 use PDF\HtmlToPdf\Drawing\Text;
+use PDF\HtmlToPdf\Exception\LimitExceeded;
+use PDF\HtmlToPdf\Exception\UnsupportedFeature;
 use PDF\HtmlToPdf\Font\FamilyFace;
 use PDF\HtmlToPdf\Font\FontCatalog;
 use PDF\HtmlToPdf\Font\FontFace;
 use PDF\HtmlToPdf\Font\FontSet;
 use PDF\HtmlToPdf\HtmlSource;
+use PDF\HtmlToPdf\Layout\InlineFormatter;
 use PDF\HtmlToPdf\Layout\LayoutEngine;
 use PDF\HtmlToPdf\Layout\PageSettings;
 use PDF\HtmlToPdf\Parsing\HtmlCompiler;
+use PDF\HtmlToPdf\Style\ComputedStyle;
 use PDF\HtmlToPdf\Style\Edges;
 use PDF\HtmlToPdf\Style\FontSlant;
 use PDF\HtmlToPdf\UnsupportedPolicy;
@@ -113,7 +117,7 @@ final class FontMatchingLayoutTest extends TestCase
         [$faces, $diagnostics] = $this->faces('<p style="font-family:ItalicOnly;font-style:oblique">slanted</p>', $default);
         self::assertSame(self::$latoItalic, $faces['slanted']);
         self::assertSame(['font.default-family', 'font.style-fallback'], array_map(static fn(Diagnostic $item): string => $item->code, $diagnostics));
-        self::assertStringContainsString('no oblique face; its italic face', $diagnostics[1]->message);
+        self::assertSame('Text requested in oblique style is drawn with a face labeled italic.', $diagnostics[1]->message);
     }
 
     public function testAFamilyWithoutTheStyleIsSkippedForTheNextFamily(): void
@@ -149,7 +153,67 @@ final class FontMatchingLayoutTest extends TestCase
         [$faces, $diagnostics] = $this->faces('<p>plain <em>slanted</em></p>', new FontSet(self::$noto, bold: self::$latoBold));
         self::assertSame(self::$noto, $faces['slanted']);
         self::assertSame(['font.style-fallback'], array_map(static fn(Diagnostic $item): string => $item->code, $diagnostics));
-        self::assertStringContainsString('no italic face', $diagnostics[0]->message);
+        self::assertSame('Text requested in italic style is drawn with a face labeled normal.', $diagnostics[0]->message);
+    }
+
+    public function testWeightNoteNamesTheFaceThatIsUsedNotAMissingFamilyFace(): void
+    {
+        // The variant is matched before the weight: the labeled small-caps 400 face wins although a bold face exists.
+        $fonts = new FontSet(self::$lato, bold: self::$latoBold, faces: [new FamilyFace(self::$latoItalic, 400, smallCaps: true)]);
+        $style = new ComputedStyle(fontWeight: 700, smallCaps: true);
+        $diagnostics = new Diagnostics();
+        self::assertSame(self::$latoItalic, (new InlineFormatter(new ConversionOptions($fonts), $diagnostics))->face($style));
+        self::assertSame(['Weight 700 text is drawn with a face labeled normal small-caps 400, across the bold threshold from the request.'], array_column($diagnostics->all(), 'message'));
+
+        // The style is matched before the weight: the only italic face is 400 although a normal bold face exists.
+        [$faces, $notes] = $this->faces('<p><b><i>both</i></b></p>', new FontSet(self::$lato, bold: self::$latoBold, italic: self::$latoItalic));
+        self::assertSame(self::$latoItalic, $faces['both']);
+        self::assertSame(['Weight 700 text is drawn with a face labeled italic 400, across the bold threshold from the request.'], array_column($notes, 'message'));
+    }
+
+    public function testACharacterTakenFromARelaxedFaceIsReportedLikeAWholeRun(): void
+    {
+        // U+211D is not in Lato: the bold italic request draws it with the upright regular default face.
+        $fonts = new FontSet(self::$noto, catalog: new FontCatalog(['Lato' => new FontSet(self::$lato, self::$latoBold, self::$latoItalic, self::$latoBoldItalic)]));
+        [$faces, $diagnostics] = $this->faces('<p style="font-family:Lato"><b><i>a' . "\u{211D}" . 'b</i></b></p><p style="font-family:Lato"><b><i>' . "\u{211D}" . '</i></b></p>', $fonts);
+        self::assertSame(self::$latoBoldItalic, $faces['a']);
+        self::assertSame(self::$noto, $faces["\u{211D}"]);
+        self::assertSame(['font.style-fallback', 'font.weight-fallback'], array_map(static fn(Diagnostic $item): string => $item->code, $diagnostics), 'once per request, although two paragraphs use the fallback');
+        self::assertSame('Text requested in italic style is drawn with a face labeled normal.', $diagnostics[0]->message);
+        self::assertSame('Weight 700 text is drawn with a face labeled normal 400, across the bold threshold from the request.', $diagnostics[1]->message);
+
+        // The same character taken from a face that satisfies the request needs no note.
+        $complete = new FontSet(self::$noto, catalog: new FontCatalog(['Lato' => new FontSet(self::$lato), 'Noto' => new FontSet(self::$noto)]));
+        [, $none] = $this->faces('<p style="font-family:Lato, Noto">a' . "\u{211D}" . 'b</p>', $complete);
+        self::assertSame([], $none);
+    }
+
+    public function testEveryFaceOfTheDefaultFamilyIsALastResortForAGlyph(): void
+    {
+        // The bold request matches Lato Bold, which lacks U+211D; the regular face of the same default family has it.
+        [$faces, $diagnostics] = $this->faces('<p><b>a' . "\u{211D}" . '</b></p>', new FontSet(self::$noto, bold: self::$latoBold));
+        self::assertSame(self::$latoBold, $faces['a']);
+        self::assertSame(self::$noto, $faces["\u{211D}"]);
+        self::assertSame(['font.weight-fallback'], array_map(static fn(Diagnostic $item): string => $item->code, $diagnostics));
+
+        // A listed family contributes its matched face only: its other faces are not searched.
+        $fonts = new FontSet(self::$lato, catalog: new FontCatalog(['Mixed' => new FontSet(self::$noto, bold: self::$latoBold)]));
+        $this->expectException(UnsupportedFeature::class);
+        $this->expectExceptionMessage('No glyph for U+211D');
+        $this->faces('<p style="font-family:Mixed"><b>a' . "\u{211D}" . '</b></p>', $fonts);
+    }
+
+    public function testLongFamilyListsAreBoundedAndKeptShortInMessages(): void
+    {
+        $names = implode(', ', array_map(static fn(int $index): string => '"Missing family number ' . $index . '"', range(1, 64)));
+        [, $diagnostics] = $this->faces('<p style=\'font-family:' . $names . '\'>text</p>', new FontSet(self::$noto));
+        self::assertSame(['font.default-family'], array_map(static fn(Diagnostic $item): string => $item->code, $diagnostics));
+        self::assertLessThan(260, strlen($diagnostics[0]->message));
+        self::assertStringContainsString('…', $diagnostics[0]->message);
+
+        $this->expectException(UnsupportedFeature::class);
+        $this->expectExceptionMessage('limited to 64 names');
+        $this->faces('<p style=\'font-family:' . $names . ', "One too many"\'>text</p>', new FontSet(self::$noto));
     }
 
     public function testWeightFallbackAcrossTheBoldThresholdIsReportedOnce(): void
@@ -171,13 +235,35 @@ final class FontMatchingLayoutTest extends TestCase
         self::assertCount(9, $diagnostics);
         self::assertSame('Further font.default-family notes are omitted.', $diagnostics[8]->message);
 
-        // A full budget drops the notes instead of stopping the conversion.
-        $options = new ConversionOptions(new FontSet(self::$noto), new PageSettings(400, 600, new Edges(20, 20, 20, 20)));
+        // Notes have their own allowance: a full budget of required diagnostics neither drops nor is dropped by them.
+        $options = new ConversionOptions(new FontSet(self::$noto), new PageSettings(400, 600, new Edges(20, 20, 20, 20)), unsupported: UnsupportedPolicy::Report);
         $full = new Diagnostics(UnsupportedPolicy::Report, 2);
         $document = (new HtmlCompiler())->parse(new HtmlSource('<p style="position:static;top:0;font-family:Missing"><strong>text</strong></p>'), $options, $full);
         self::assertCount(2, $full->all());
         (new LayoutEngine())->layout($document, $options, $full);
-        self::assertSame(['css.property', 'css.property'], array_column($full->all(), 'code'));
+        self::assertSame(['css.property', 'css.property', 'font.default-family', 'font.weight-fallback'], array_column($full->all(), 'code'));
+    }
+
+    public function testANoteNeverTakesThePlaceOfARequiredDiagnostic(): void
+    {
+        // 99 unsupported declarations, one note, then the hundredth required diagnostic from the automatic table.
+        $html = str_repeat('<p style="position:static">x</p>', 99) . '<p style="font-family:Verdana">text</p><table><tr><td>cell</td></tr></table>';
+        $options = new ConversionOptions(new FontSet(self::$noto), new PageSettings(400, 4000, new Edges(20, 20, 20, 20)), unsupported: UnsupportedPolicy::Report);
+        $diagnostics = new Diagnostics(UnsupportedPolicy::Report);
+        $document = (new HtmlCompiler())->parse(new HtmlSource($html), $options, $diagnostics);
+        (new LayoutEngine())->layout($document, $options, $diagnostics);
+        $codes = array_count_values(array_column($diagnostics->all(), 'code'));
+        self::assertSame(['css.property' => 99, 'font.default-family' => 1, 'layout.table-auto' => 1], $codes);
+
+        $notes = new Diagnostics(UnsupportedPolicy::Report, 2);
+        self::assertTrue($notes->inform('note', 'one'));
+        self::assertTrue($notes->inform('note', 'two'));
+        self::assertFalse($notes->inform('note', 'three'), 'the note allowance is bounded and silent');
+        $notes->add('required', 'one');
+        $notes->add('required', 'two');
+        self::assertCount(4, $notes->all());
+        $this->expectException(LimitExceeded::class);
+        $notes->add('required', 'three');
     }
 
     /**

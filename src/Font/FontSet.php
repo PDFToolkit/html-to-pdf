@@ -38,14 +38,21 @@ final readonly class FontSet
         if ($boldItalic !== null) {
             $labeled[] = new FamilyFace($boldItalic, 700, FontSlant::Italic);
         }
-        array_push($labeled, ...$faces);
         // Distinct labels also bound a family: three styles, two variants and nine weights.
-        $keys = [];
+        $byKey = [];
         foreach ($labeled as $face) {
-            if (isset($keys[$face->key()])) {
+            $byKey[$face->key()] = $face;
+        }
+        foreach ($faces as $face) {
+            $known = $byKey[$face->key()] ?? null;
+            if ($known !== null && $known->face !== $face->face) {
                 throw new \InvalidArgumentException('A family cannot declare two faces with the same style, variant and weight: ' . $face->key());
             }
-            $keys[$face->key()] = true;
+            // Restating a face with its own labels is harmless, so the list read from $faces can be passed back.
+            if ($known === null) {
+                $byKey[$face->key()] = $face;
+                $labeled[] = $face;
+            }
         }
         $this->faces = $labeled;
     }
@@ -71,13 +78,19 @@ final readonly class FontSet
         if ($families !== null && $families->names !== []) {
             return $this->catalog->select($families)->face($style);
         }
-        $face = match ($style) {
-            FontStyle::Regular => $this->regular,
-            FontStyle::Bold => $this->bold,
-            FontStyle::Italic => $this->italic,
-            FontStyle::BoldItalic => $this->boldItalic,
+        $key = match ($style) {
+            FontStyle::Regular => 'normal:normal:400',
+            FontStyle::Bold => 'normal:normal:700',
+            FontStyle::Italic => 'italic:normal:400',
+            FontStyle::BoldItalic => 'italic:normal:700',
         };
+        // A face labeled like a named slot is that slot, whichever way it was supplied.
+        foreach ($this->faces as $face) {
+            if ($face->key() === $key) {
+                return $face->face;
+            }
+        }
 
-        return $face ?? throw new UnsupportedFeature('Supply the ' . $style->value . ' font variant explicitly.');
+        throw new UnsupportedFeature('Supply the ' . $style->value . ' font variant explicitly.');
     }
 }

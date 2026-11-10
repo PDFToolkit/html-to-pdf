@@ -7,10 +7,16 @@ namespace PDF\HtmlToPdf\Style;
 /** An empty list selects the caller's original default FontSet. */
 final readonly class FontFamilyList
 {
+    /** Every name is a candidate family for every character, so the list itself is bounded. */
+    public const int MAX_NAMES = 64;
+
     /** @param list<FontFamilyName> $names */
     public function __construct(public array $names = [])
     {
         $this->requireNames($names);
+        if (count($names) > self::MAX_NAMES) {
+            throw new \InvalidArgumentException('A font family list is limited to ' . self::MAX_NAMES . ' names.');
+        }
     }
 
     private function requireNames(mixed $names): void

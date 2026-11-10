@@ -123,6 +123,30 @@ final class TextItemizerTest extends TestCase
         }
     }
 
+    public function testCoverageProbeRejectsValuesThatAreNotCharacters(): void
+    {
+        foreach ([-1, 0xD800, 0xDFFF, 0x110000] as $value) {
+            try {
+                self::$lato->face->hasGlyph($value);
+                self::fail('A value outside Unicode scalar values must be rejected.');
+            } catch (\InvalidArgumentException $error) {
+                self::assertStringContainsString('Unicode scalar value', $error->getMessage());
+            }
+        }
+        self::assertFalse(self::$lato->face->hasGlyph(0x10FFFF));
+    }
+
+    public function testWholeTextCoverageIsTheUndividedCase(): void
+    {
+        $itemizer = new TextItemizer();
+        self::assertTrue($itemizer->drawsAsWritten(self::$lato, "Plain été e\u{0301}"));
+        self::assertTrue($itemizer->drawsAsWritten(self::$lato, ''));
+        self::assertFalse($itemizer->drawsAsWritten(self::$lato, "Plain \u{211D}"));
+        self::assertTrue($itemizer->drawsAsWritten(self::$noto, "Plain \u{211D}"));
+        $this->expectException(\InvalidArgumentException::class);
+        $itemizer->drawsAsWritten(self::$lato, "\xFF");
+    }
+
     public function testInvalidUtf8IsRejected(): void
     {
         $this->expectException(\InvalidArgumentException::class);

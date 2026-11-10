@@ -19,6 +19,8 @@ final class LayoutPreparation
 {
     private ?PreparedLayout $prepared = null;
     private ?UnicodeCharacterMap $map = null;
+    /** @var array<int, bool> Bounded memo: line breaking probes the same characters many times. */
+    private array $coverage = [];
 
     public function __construct(private readonly SfntFont $font, private readonly ReadLimits $limits) {}
 
@@ -32,7 +34,15 @@ final class LayoutPreparation
     /** Coverage reads the character map only: probing a fallback face prepares no shaping table. */
     public function covers(int $codePoint): bool
     {
-        return $this->map()->glyphFor(new CodePoint($codePoint))->value !== 0;
+        if (isset($this->coverage[$codePoint])) {
+            return $this->coverage[$codePoint];
+        }
+        $covered = $this->map()->glyphFor(new CodePoint($codePoint))->value !== 0;
+        if (count($this->coverage) < 65_536) {
+            $this->coverage[$codePoint] = $covered;
+        }
+
+        return $covered;
     }
 
     private function map(): UnicodeCharacterMap

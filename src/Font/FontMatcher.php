@@ -17,6 +17,8 @@ final readonly class FontMatcher
     /**
      * Steps 2, 3 and 5: every listed family that has a face of the requested style, in order,
      * then the default family with the best match it can offer. Unbound names are skipped.
+     * The other faces of the default family follow as a last resort for a character that no
+     * matched face can draw, the "other means" CSS 2.1 15.2 leaves to the user agent.
      */
     public function chain(FontSet $default, FontFamilyList $families, FontSlant $slant, int $weight, bool $smallCaps = false): FaceChain
     {
@@ -30,8 +32,10 @@ final readonly class FontMatcher
         }
         $listed = $faces !== [];
         $best = $this->best($default, $slant, $weight, $smallCaps);
-        if (!$this->contains($faces, $best)) {
-            $faces[] = $best;
+        foreach ([$best, ...$default->faces] as $face) {
+            if (!$this->contains($faces, $face)) {
+                $faces[] = $face;
+            }
         }
 
         return new FaceChain($faces, $listed, $this->match($default, $slant, $weight, $smallCaps) === null);

@@ -161,11 +161,31 @@ final class FontFallbackLayoutTest extends TestCase
     {
         $options = new ConversionOptions($this->fonts(), limits: new ConversionLimits(maxTextCharacters: 1));
         $style = new ComputedStyle(fontFamily: new FontFamilyList([new FontFamilyName('Lato'), new FontFamilyName('Noto')]));
+        // Budget: 256 bytes. Each divided call costs its bytes twice, for the division and for the measurement.
+        $divided = "abc\u{211D}d";
+        self::assertSame(7, strlen($divided));
         $formatter = new InlineFormatter($options);
-        $this->expectException(LimitExceeded::class);
-        for ($round = 0; $round < 100; ++$round) {
-            $formatter->advance('abcdefgh', $style);
+        $rounds = 0;
+        try {
+            for (; $rounds < 100; ++$rounds) {
+                $formatter->advance($divided . str_repeat(' ', $rounds), $style);
+            }
+            self::fail('The shaping budget must stop repeated fallback work.');
+        } catch (LimitExceeded) {
         }
+        // Texts grow by one byte per round so that no cache answers: 2 x (7 + n) bytes in round n.
+        self::assertSame(10, $rounds, 'without charging the division, the same loop lasts 17 rounds');
+
+        // Text that the first face draws as written is charged once, as before font fallback existed.
+        $plain = new InlineFormatter($options);
+        $rounds = 0;
+        try {
+            for (; $rounds < 100; ++$rounds) {
+                $plain->advance('abcdefgh' . str_repeat(' ', $rounds), $style);
+            }
+        } catch (LimitExceeded) {
+        }
+        self::assertSame(16, $rounds);
     }
 
     public function testPublicHelpersShareOneGeometry(): void

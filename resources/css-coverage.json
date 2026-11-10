@@ -48,7 +48,7 @@
       "status": "partial",
       "sample": "serif",
       "context": "div",
-      "note": "Ordered named/generic families resolved against explicit FontCatalog bindings. A family that is unbound or lacks the requested style is skipped, and the default family is used when none matches, with an informational diagnostic. A character without a glyph in the matching face is taken from the next listed family and finally from the default family, by grapheme cluster; a character absent from every supplied face is rejected. No system lookup.",
+      "note": "Ordered named/generic families resolved against explicit FontCatalog bindings. A family that is unbound or lacks the requested style is skipped, and the default family is used when none matches, with an informational diagnostic. A character without a glyph in the matching face is taken, by grapheme cluster, from the matched face of the next listed family and finally from any face of the default family; a character none of these candidates has is rejected. A list is limited to 64 names. No system lookup.",
       "tests": [
         "tests/Css/Css1RegistryTest.php",
         "tests/Css/FontDeclarationsTest.php",
@@ -928,15 +928,14 @@
       "name": "font-matching",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
       "status": "partial",
-      "note": "Caller-labeled faces are matched per element in the order style, variant and weight of CSS 2.1 15.2: italic accepts oblique, other styles match exactly, a family without the style or without a binding is skipped, weights follow CSS 2.1 15.6 and never fail, and the default family supplies its best match with an informational diagnostic. A character without a glyph falls back through the candidate faces by grapheme cluster; a cluster no single face covers is divided by character and reported. Runs are shaped separately, so kerning and ligatures do not cross a font change, and the line box keeps the metrics of the first face. A character absent from every supplied face raises UnsupportedFeature instead of the missing-character symbol CSS 2.1 recommends. small-caps prefers a face labeled as a small-caps font and otherwise synthesizes scaled capitals; no weight or slant is synthesized.",
+      "note": "Caller-labeled faces are matched per element in the order style, variant and weight of CSS 2.1 15.2: italic accepts oblique, other styles match exactly, a family without the style or without a binding is skipped, weights follow CSS 2.1 15.6 and never fail, and the default family supplies its best match with an informational diagnostic. A character without a glyph falls back through the candidate faces by grapheme cluster; a cluster no single face covers is divided by character and reported. Runs are shaped separately, so kerning and ligatures do not cross a font change, and the line box keeps the metrics of the first face. The candidates are one matched face per listed family, then every face of the default family; a character none of them has raises UnsupportedFeature instead of the missing-character symbol CSS 2.1 recommends. A face that draws text without the requested style or from the other side of the bold threshold is reported, whether it draws a run or a single character. small-caps prefers a face labeled as a small-caps font and otherwise synthesizes scaled capitals; no weight or slant is synthesized.",
       "tests": [
         "tests/Font/FontMatcherTest.php",
         "tests/Font/FamilyFaceTest.php",
         "tests/Font/TextItemizerTest.php",
         "tests/Layout/FontMatchingLayoutTest.php",
         "tests/Layout/FontFallbackLayoutTest.php",
-        "tests/Rendering/FontFallbackRenderingTest.php",
-        "tests/Font/FontCatalogTest.php"
+        "tests/Rendering/FontFallbackRenderingTest.php"
       ]
     },
     {

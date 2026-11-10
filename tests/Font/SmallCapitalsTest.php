@@ -9,6 +9,7 @@ use PDF\HtmlToPdf\Exception\UnsupportedFeature;
 use PDF\HtmlToPdf\Font\FaceChain;
 use PDF\HtmlToPdf\Font\FamilyFace;
 use PDF\HtmlToPdf\Font\FontFace;
+use PDF\HtmlToPdf\Font\FontLimits;
 use PDF\HtmlToPdf\Font\SmallCapitals;
 use PDF\HtmlToPdf\Font\TextItemizer;
 use PDF\HtmlToPdf\Font\TextSegment;
@@ -93,6 +94,16 @@ final class SmallCapitalsTest extends TestCase
     public function testCapitalsDoNotChangeTextWithoutLowercase(): void
     {
         self::assertEquals(self::$lato->shape('AB 12', 10)->text->layout, self::$lato->shape('AB 12', 10, capitals: true)->text->layout);
+    }
+
+    public function testTheGlyphBudgetCountsTheCapitalsReallyDrawn(): void
+    {
+        $face = new FontFace(file_get_contents(__DIR__ . '/../../examples/assets/fonts/Lato-Regular.ttf'), new FontLimits(maxGlyphs: 2));
+        self::assertGreaterThan(0, $face->measure('aß', 10));
+        // Two characters, three glyphs: A, S, S.
+        $this->expectException(UnsupportedFeature::class);
+        $this->expectExceptionMessage('glyph budget');
+        $face->shape('aß', 10, capitals: true);
     }
 
     public function testAMissingUppercaseGlyphIsNamed(): void

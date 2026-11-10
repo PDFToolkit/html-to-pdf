@@ -229,6 +229,42 @@ final class FontMatcherTest extends TestCase
         self::assertSame([self::$lato, self::$noto], array_map(static fn(FamilyFace $face): FontFace => $face->face, $empty->faces));
     }
 
+    public function testVariantIsMatchedInEveryCandidateFamily(): void
+    {
+        $matcher = new FontMatcher();
+        $labeled = new FamilyFace(self::$noto, 400, smallCaps: true);
+        $default = new FontSet(self::$latoBold, catalog: new FontCatalog(['Caps' => new FontSet(self::$lato, faces: [$labeled]), 'Plain' => new FontSet(self::$latoItalic)]));
+        $families = (new FontFamilyParser())->parse('Plain, Caps');
+        $smallCaps = $matcher->chain($default, $families, FontSlant::Normal, 400, true);
+        self::assertSame([self::$latoItalic, self::$noto, self::$latoBold], array_map(static fn(FamilyFace $face): FontFace => $face->face, $smallCaps->faces));
+        self::assertSame($labeled, $smallCaps->faces[1], 'the labeled small-caps face of a listed family is its match');
+        $normal = $matcher->chain($default, $families, FontSlant::Normal, 400);
+        self::assertSame([self::$latoItalic, self::$lato, self::$latoBold], array_map(static fn(FamilyFace $face): FontFace => $face->face, $normal->faces));
+    }
+
+    public function testGenericKeywordsAndQuotedNamesAreDistinctFamilies(): void
+    {
+        $matcher = new FontMatcher();
+        $default = new FontSet(self::$latoBold, catalog: new FontCatalog(['sans-serif' => new FontSet(self::$lato)], ['sans-serif' => new FontSet(self::$noto)]));
+        $parse = static fn(string $families) => (new FontFamilyParser())->parse($families);
+        self::assertSame(self::$lato, $matcher->chain($default, $parse('"sans-serif"'), FontSlant::Normal, 400)->primary()->face);
+        self::assertSame(self::$noto, $matcher->chain($default, $parse('sans-serif'), FontSlant::Normal, 400)->primary()->face);
+        self::assertSame(self::$latoBold, $matcher->chain($default, $parse('"serif", serif'), FontSlant::Normal, 400)->primary()->face, 'neither the name nor the keyword is bound');
+    }
+
+    public function testOtherFacesOfTheDefaultFamilyFollowItsBestMatch(): void
+    {
+        $matcher = new FontMatcher();
+        $default = new FontSet(self::$noto, bold: self::$latoBold, italic: self::$latoItalic, catalog: new FontCatalog(['Lato' => new FontSet(self::$lato, bold: self::$latoBold)]));
+        $chain = $matcher->chain($default, (new FontFamilyParser())->parse('Lato'), FontSlant::Italic, 700);
+        // Lato has no italic face and is skipped; the default family offers its italic, then its other faces.
+        self::assertSame([self::$latoItalic, self::$noto, self::$latoBold], array_map(static fn(FamilyFace $face): FontFace => $face->face, $chain->faces));
+        self::assertFalse($chain->listedFamilyMatched);
+        self::assertFalse($chain->styleRelaxed);
+        $bold = $matcher->chain($default, (new FontFamilyParser())->parse('Lato'), FontSlant::Normal, 700);
+        self::assertSame([self::$latoBold, self::$noto, self::$latoItalic], array_map(static fn(FamilyFace $face): FontFace => $face->face, $bold->faces), 'a program already matched is not listed twice');
+    }
+
     public function testChainKeepsOneCandidatePerFontProgram(): void
     {
         $matcher = new FontMatcher();

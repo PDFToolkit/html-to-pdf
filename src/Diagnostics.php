@@ -10,6 +10,8 @@ use PDF\HtmlToPdf\Exception\UnsupportedFeature;
 final class Diagnostics
 {
     /** @var list<Diagnostic> */ private array $items = [];
+    private int $required = 0;
+    private int $notes = 0;
     public function __construct(private readonly UnsupportedPolicy $policy = UnsupportedPolicy::Reject, private readonly int $maximum = 100)
     {
         if ($maximum < 1) {
@@ -18,20 +20,23 @@ final class Diagnostics
     }
     public function add(string $code, string $message, ?string $nodeId = null): void
     {
-        if (count($this->items) >= $this->maximum) {
+        if ($this->required >= $this->maximum) {
             throw new LimitExceeded('Diagnostic budget exhausted.');
         }
+        ++$this->required;
         $this->items[] = new Diagnostic($code, $message, $nodeId);
     }
     /**
      * Informational note about a behavior the specification defines, recorded in both
-     * policies while the budget allows. Unlike add(), it never stops a conversion.
+     * policies. Notes have their own allowance of the same size: they never stop a
+     * conversion and never take the place of a diagnostic that add() must record.
      */
     public function inform(string $code, string $message, ?string $nodeId = null): bool
     {
-        if (count($this->items) >= $this->maximum) {
+        if ($this->notes >= $this->maximum) {
             return false;
         }
+        ++$this->notes;
         $this->items[] = new Diagnostic($code, $message, $nodeId);
 
         return true;

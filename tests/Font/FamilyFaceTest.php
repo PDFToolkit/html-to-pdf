@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PDF\HtmlToPdf\Tests\Font;
 
+use PDF\HtmlToPdf\Exception\UnsupportedFeature;
 use PDF\HtmlToPdf\Font\FamilyFace;
 use PDF\HtmlToPdf\Font\FontFace;
 use PDF\HtmlToPdf\Font\FontSet;
@@ -91,6 +92,29 @@ final class FamilyFaceTest extends TestCase
     {
         $this->expectException(\InvalidArgumentException::class);
         new FontSet(self::$noto, faces: [new FamilyFace(self::$lato, 300, FontSlant::Oblique), new FamilyFace(self::$noto, 300, FontSlant::Oblique)]);
+    }
+
+    public function testAFamilyCanBeRebuiltFromItsPublicFaces(): void
+    {
+        $light = new FamilyFace(self::$lato, 300);
+        $set = new FontSet(self::$noto, bold: self::$lato, faces: [$light]);
+        $copy = new FontSet($set->regular, $set->bold, $set->italic, $set->boldItalic, $set->catalog, $set->faces);
+        self::assertSame(array_map(static fn(FamilyFace $face): string => $face->key(), $set->faces), array_map(static fn(FamilyFace $face): string => $face->key(), $copy->faces));
+        self::assertSame($light, $copy->faces[2]);
+        // Restating a slot with another program is still a contradiction.
+        $this->expectException(\InvalidArgumentException::class);
+        new FontSet(self::$noto, faces: [new FamilyFace(self::$lato, 400)]);
+    }
+
+    public function testExactLookupFindsAFaceLabeledLikeANamedSlot(): void
+    {
+        $set = new FontSet(self::$noto, faces: [new FamilyFace(self::$lato, 700), new FamilyFace(self::$lato, 400, FontSlant::Italic)]);
+        self::assertNull($set->bold, 'the constructor slot itself stays empty');
+        self::assertSame(self::$lato, $set->face(FontStyle::Bold));
+        self::assertSame(self::$lato, $set->face(FontStyle::Italic));
+        self::assertSame(self::$noto, $set->face(FontStyle::Regular));
+        $this->expectException(UnsupportedFeature::class);
+        $set->face(FontStyle::BoldItalic);
     }
 
     public function testTheSameFileMayCarrySeveralLabels(): void

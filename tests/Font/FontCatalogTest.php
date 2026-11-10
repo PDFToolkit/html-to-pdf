@@ -45,13 +45,14 @@ final class FontCatalogTest extends TestCase
         self::assertSame(self::$noto, $set->face(FontStyle::Regular, (new FontFamilyParser())->parse('sans-serif')));
     }
 
-    public function testUnboundFamilyCannotSilentlyUseTheDefaultFont(): void
+    /** FontSet::face() is the exact lookup; conversion uses CSS matching, tested in FontMatcherTest. */
+    public function testExactLookupRejectsAnUnboundFamilyList(): void
     {
         $this->expectException(UnsupportedFeature::class);
         (new FontSet(self::$noto))->face(FontStyle::Regular, (new FontFamilyParser())->parse('Verdana, sans-serif'));
     }
 
-    public function testMissingVariantDoesNotSilentlyChangeFamilyOrSynthesize(): void
+    public function testExactLookupRejectsAnEmptySlotOfTheSelectedFamily(): void
     {
         $set = new FontSet(self::$noto, catalog: new FontCatalog(['Example' => new FontSet(self::$lato)], ['serif' => new FontSet(self::$noto, self::$noto)]));
         $this->expectException(UnsupportedFeature::class);

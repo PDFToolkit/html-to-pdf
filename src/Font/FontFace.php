@@ -58,6 +58,9 @@ final readonly class FontFace
     /** Whether the face maps one Unicode code point to a glyph, as the shaper will see it. */
     public function hasGlyph(int $codePoint): bool
     {
+        if ($codePoint < 0 || $codePoint > 0x10FFFF || ($codePoint >= 0xD800 && $codePoint <= 0xDFFF)) {
+            throw new \InvalidArgumentException('A code point must be a Unicode scalar value.');
+        }
         try {
             return $this->layout->covers($codePoint);
         } catch (\InvalidArgumentException|\RuntimeException $error) {

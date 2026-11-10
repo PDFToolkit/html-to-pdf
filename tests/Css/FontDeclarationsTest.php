@@ -31,6 +31,39 @@ final class FontDeclarationsTest extends CompilerTestCase
         self::assertEquals($body->fontFamily, $inner->fontFamily);
     }
 
+    /** @return iterable<string,array{string,float,float,string}> */
+    public static function css1Examples(): iterable
+    {
+        // CSS1 5.2.7, first and second examples; the three others are in FontSizeKeywordsTest and FontVariantTest.
+        yield 'first example' => ['12pt/14pt sans-serif', 12.0, 14.0, 'sans-serif'];
+        yield 'second example' => ['80% sans-serif', 16.0, 16.0 * 4 / 3, 'sans-serif'];
+    }
+
+    #[DataProvider('css1Examples')]
+    public function testSpecificationExamplesResetEveryOmittedComponent(string $value, float $size, float $lineHeight, string $family): void
+    {
+        $document = $this->compile('<div id="parent"><p id="subject">A</p></div>', '#parent{font:italic small-caps bold 20pt/50pt serif}#subject{font:' . $value . '}');
+        $style = $this->find($document->root, 'subject')->style;
+        self::assertEqualsWithDelta($size, $style->fontSize, 1e-12);
+        self::assertEqualsWithDelta($lineHeight, $style->lineHeight, 1e-12);
+        self::assertSame($family, $style->fontFamily->css());
+        self::assertSame(400, $style->fontWeight);
+        self::assertFalse($style->italic);
+        self::assertFalse($style->smallCaps);
+    }
+
+    public function testAnInvalidLineHeightKeywordDoesNotEraseTheEarlierShorthand(): void
+    {
+        $diagnostics = new Diagnostics(UnsupportedPolicy::Report);
+        $document = $this->compile('<div id="parent"><p id="subject">A</p></div>', '#parent{line-height:30pt}#subject{font:italic 20pt fantasy;font:12pt/inherit serif}', $this->options(policy: UnsupportedPolicy::Report), $diagnostics);
+        $style = $this->find($document->root, 'subject')->style;
+        self::assertSame(20.0, $style->fontSize);
+        self::assertTrue($style->italic);
+        self::assertSame('fantasy', $style->fontFamily->css());
+        self::assertEqualsWithDelta(20 * 4 / 3, $style->lineHeight, 1e-12);
+        self::assertCount(1, $diagnostics->all());
+    }
+
     public function testUnitlessLineHeightRemainsAFactorInDescendants(): void
     {
         $document = $this->compile('<div id="a"><p id="b">B</p></div>', '#a{font:10px/1 sans-serif}#b{font-size:2em}');
@@ -88,7 +121,7 @@ final class FontDeclarationsTest extends CompilerTestCase
     /** @return iterable<string,array{string}> */
     public static function invalidShorthands(): iterable
     {
-        foreach (['10px', 'italic bold bold 10px serif', 'normal normal normal normal 10px serif', '10px / serif', '10px//1 serif', '10px/0 serif', '10px/1 serif,', 'italic 0px serif', 'small-caps small-caps 10px serif', 'all-small-caps 10px serif', 'italic oblique 10px serif', 'oblique oblique 10px serif', 'caption', '10px serif,,sans-serif', '10px "unterminated'] as $value) {
+        foreach (['10px', '12pt/inherit serif', '12pt/initial serif', '12pt/UNSET serif', 'italic bold bold 10px serif', 'normal normal normal normal 10px serif', '10px / serif', '10px//1 serif', '10px/0 serif', '10px/1 serif,', 'italic 0px serif', 'small-caps small-caps 10px serif', 'all-small-caps 10px serif', 'italic oblique 10px serif', 'oblique oblique 10px serif', 'caption', '10px serif,,sans-serif', '10px "unterminated'] as $value) {
             yield $value => [$value];
         }
     }

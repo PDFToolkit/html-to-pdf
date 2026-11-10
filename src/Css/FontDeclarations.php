@@ -55,8 +55,8 @@ final readonly class FontDeclarations
         }
         if (isset($tokens[$index]) && !$tokens[$index]->quoted && $tokens[$index]->value === '/') {
             ++$index;
-            if (!isset($tokens[$index]) || $tokens[$index]->quoted) {
-                throw new \InvalidArgumentException('Expected line height after the font slash.');
+            if (!isset($tokens[$index]) || $tokens[$index]->quoted || in_array(strtolower($tokens[$index]->value), ['inherit', 'initial', 'unset'], true)) {
+                throw new \InvalidArgumentException('Expected a line height after the font slash; a CSS-wide keyword must be the whole shorthand.');
             }
             $result['line-height'] = $tokens[$index++]->value;
         }

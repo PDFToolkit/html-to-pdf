@@ -13,6 +13,7 @@ use PDF\HtmlToPdf\Drawing\Text;
 use PDF\HtmlToPdf\Exception\LimitExceeded;
 use PDF\HtmlToPdf\Exception\UnsupportedFeature;
 use PDF\HtmlToPdf\Font\FaceChain;
+use PDF\HtmlToPdf\Font\FamilyFace;
 use PDF\HtmlToPdf\Font\FontFace;
 use PDF\HtmlToPdf\Font\FontMatcher;
 use PDF\HtmlToPdf\Font\SmallCapitals;
@@ -43,6 +44,10 @@ final class InlineFormatter
     private array $notes = [];
     /** @var array<string, int> */
     private array $noteCounts = [];
+    /** @var array<int, array<int, true>> Faces already checked against a request, by chain then face. */
+    private array $explained = [];
+    /** @var array<int, array<string, true>> Run conditions already reported, by chain. */
+    private array $reported = [];
 
     private const int MAX_NOTES_PER_CODE = 8;
 
@@ -89,24 +94,28 @@ final class InlineFormatter
     }
 
     /**
-     * Character fallback across the face chain. A single candidate needs no coverage probe,
-     * so text in one supplied face keeps the single run it always had.
+     * Character fallback across the face chain. Text that the first face draws as written keeps
+     * the single run it always had; only a real division is charged to the shaping budget.
      *
      * @return list<TextSegment>
      */
     private function segments(string $text, ComputedStyle $style): array
     {
         $chain = $this->chain($style);
+        $primary = $chain->primary();
         if (count($chain->faces) === 1 && !$style->smallCaps) {
-            return [new TextSegment($chain->primary(), $text)];
-        }
-        $this->measuredBytes += strlen($text);
-        if ($this->measuredBytes > $this->options->limits->maxTextCharacters * 256) {
-            throw new LimitExceeded('Cumulative text shaping work budget exhausted.');
+            return [new TextSegment($primary, $text)];
         }
         $key = spl_object_id($chain) . ':' . $text;
         $segments = $this->itemizations[$key] ?? null;
         if ($segments === null) {
+            if (!$style->smallCaps && $this->itemizer->drawsAsWritten($primary, $text)) {
+                return [new TextSegment($primary, $text)];
+            }
+            $this->measuredBytes += strlen($text);
+            if ($this->measuredBytes > $this->options->limits->maxTextCharacters * 256) {
+                throw new LimitExceeded('Cumulative text shaping work budget exhausted.');
+            }
             $segments = $this->itemizer->itemize($text, $chain, $style->smallCaps);
             $entryBytes = strlen($key) + 64 * count($segments);
             if (count($this->itemizations) < $this->options->limits->maxCommands
@@ -116,13 +125,20 @@ final class InlineFormatter
             }
         }
         foreach ($segments as $segment) {
+            if ($segment->face !== $primary) {
+                $this->explain($chain, $segment->face, $style);
+            }
             if ($segment->split) {
                 if (($style->textSpacing->letterSpacing ?? 0.0) !== 0.0) {
                     throw new UnsupportedFeature('Letter spacing across a grapheme divided between fonts requires shared cluster shaping.');
                 }
-                $this->note('font.cluster-split', 'No single face of ' . ($style->fontFamily->names === [] ? 'the default family' : $style->fontFamily->css()) . ' has every character of a grapheme cluster; its characters are drawn with different fonts.');
+                if (!isset($this->reported[spl_object_id($chain)]['split'])) {
+                    $this->reported[spl_object_id($chain)]['split'] = true;
+                    $this->note('font.cluster-split', 'No single face of ' . $this->families($style) . ' has every character of a grapheme cluster; its characters are drawn with different fonts.');
+                }
             }
-            if ($segment->unchanged) {
+            if ($segment->unchanged && !isset($this->reported[spl_object_id($chain)]['unchanged'])) {
+                $this->reported[spl_object_id($chain)]['unchanged'] = true;
                 $this->note('font.small-caps-fallback', 'No supplied face has the uppercase glyphs of a lowercase letter; it is drawn as written instead of as a small capital.');
             }
         }
@@ -208,7 +224,7 @@ final class InlineFormatter
                         if (($piece->style->textSpacing->letterSpacing ?? 0.0) !== 0.0 || ($piece->style->textSpacing->wordSpacing ?? 0.0) !== 0.0) {
                             throw new UnsupportedFeature('Preserved tabs with nonzero text spacing require exact tab-stop positioning.');
                         }
-                        $space = $this->measure($this->face($piece->style), ' ', $piece->style->fontSize, $piece->style->textSpacing);
+                        $space = $this->advance(' ', $piece->style);
                         $column = (int) floor($this->width($line) / max($space, 0.0001));
                         $part = str_repeat(' ', 8 - $column % 8);
                     }
@@ -270,26 +286,43 @@ final class InlineFormatter
         $slant = $style->fontSlant();
         $key = $style->fontFamily->css() . '|' . $slant->value . '|' . $style->fontWeight . '|' . ($style->smallCaps ? 'small-caps' : 'normal');
         if (!isset($this->chainsByKey[$key])) {
-            $this->chainsByKey[$key] = $this->matcher->chain($this->options->fonts, $style->fontFamily, $slant, $style->fontWeight, $style->smallCaps);
-            $this->explain($this->chainsByKey[$key], $style, $slant);
+            $chain = $this->chainsByKey[$key] = $this->matcher->chain($this->options->fonts, $style->fontFamily, $slant, $style->fontWeight, $style->smallCaps);
+            if (!$chain->listedFamilyMatched && $style->fontFamily->names !== []) {
+                $this->note('font.default-family', 'No supplied family matches ' . $this->families($style) . ' in ' . $slant->value . ' style; the default family is used.');
+            }
+            $this->explain($chain, $chain->primary(), $style);
         }
 
         return $this->chains[$style] = $this->chainsByKey[$key];
     }
 
-    /** Matching outcomes that CSS defines but that a caller may not expect are recorded, never rejected. */
-    private function explain(FaceChain $chain, ComputedStyle $style, FontSlant $slant): void
+    /**
+     * Matching outcomes that CSS defines but that a caller may not expect are recorded, never
+     * rejected: a face that draws text without the requested style, or from the other side of
+     * the bold threshold, is reported once per request, whether it draws a whole run or one
+     * character taken by fallback.
+     */
+    private function explain(FaceChain $chain, FamilyFace $face, ComputedStyle $style): void
     {
-        $face = $chain->primary();
-        if (!$chain->listedFamilyMatched && $style->fontFamily->names !== []) {
-            $this->note('font.default-family', 'No supplied family matches ' . $style->fontFamily->css() . ' in ' . $slant->value . ' style; the default family is used.');
+        if (isset($this->explained[spl_object_id($chain)][spl_object_id($face)])) {
+            return;
         }
-        if (!$chain->listedFamilyMatched && $chain->styleRelaxed) {
-            $this->note('font.style-fallback', 'The default family has no ' . $slant->value . ' face; its ' . $face->slant->value . ' face is used.');
+        $this->explained[spl_object_id($chain)][spl_object_id($face)] = true;
+        $slant = $style->fontSlant();
+        if ($face->slant !== $slant && !($slant === FontSlant::Italic && $face->slant === FontSlant::Oblique)) {
+            $this->note('font.style-fallback', sprintf('Text requested in %s style is drawn with a face labeled %s.', $slant->value, $face->slant->value));
         }
         if (($style->fontWeight >= 600) !== ($face->weight >= 600)) {
-            $this->note('font.weight-fallback', sprintf('Weight %d has no face on its side of the bold threshold in the matched family; its %d face is used.', $style->fontWeight, $face->weight));
+            $this->note('font.weight-fallback', sprintf('Weight %d text is drawn with a face labeled %s%s %d, across the bold threshold from the request.', $style->fontWeight, $face->slant->value, $face->smallCaps ? ' small-caps' : '', $face->weight));
         }
+    }
+
+    /** The author's family list for a message, kept short whatever the style sheet contains. */
+    private function families(ComputedStyle $style): string
+    {
+        $css = $style->fontFamily->names === [] ? 'the default family' : $style->fontFamily->css();
+
+        return strlen($css) > 120 ? mb_strcut($css, 0, 120, 'UTF-8') . '…' : $css;
     }
 
     private function note(string $code, string $message): void

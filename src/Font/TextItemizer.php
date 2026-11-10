@@ -26,6 +26,21 @@ final readonly class TextItemizer
         $this->capitals = new SmallCapitals();
     }
 
+    /** Whether one face draws the whole text as written, the common case that needs no division. */
+    public function drawsAsWritten(FamilyFace $face, string $text): bool
+    {
+        if (!mb_check_encoding($text, 'UTF-8')) {
+            throw new \InvalidArgumentException('Font fallback requires valid UTF-8 text.');
+        }
+        foreach (mb_str_split($text, 1, 'UTF-8') as $character) {
+            if (!$face->face->hasGlyph(mb_ord($character, 'UTF-8'))) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /**
      * @return list<TextSegment> Never empty; the texts concatenate to the input.
      */
