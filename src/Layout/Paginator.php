@@ -136,7 +136,7 @@ final class Paginator
             if ($artifact) {
                 $command = match (true) {
                     $command instanceof BorderBox => new BorderBox($command->x, $command->y, $command->width, $command->height, $command->borders, $command->offset, $command->totalHeight),
-                    $command instanceof Text => new Text($command->font, $command->text, $command->size, $command->x, $command->y, $command->color, null),
+                    $command instanceof Text => $command->detached(),
                     $command instanceof Image => new Image($command->x, $command->y, $command->width, $command->height, $command->asset),
                     $command instanceof Rectangle => new Rectangle($command->x, $command->y, $command->width, $command->height, $command->color, $command->borderColor, $command->borderWidth),
                     default => throw new \LogicException('Unsupported repeated table drawing command.'),

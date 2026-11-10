@@ -17,7 +17,7 @@ final readonly class CommandTranslation
     {
         return match (true) {
             $command instanceof BorderBox => new BorderBox($command->x + $x, $command->y + $y, $command->width, $command->height, $command->borders, $command->offset, $command->totalHeight, $command->semanticId),
-            $command instanceof Text => new Text($command->font, $command->text, $command->size, $command->x + $x, $command->y + $y, $command->color, $command->semanticId, $command->uri, $command->spacing),
+            $command instanceof Text => $command->at($command->x + $x, $command->y + $y),
             $command instanceof RadioButton => new RadioButton($command->x + $x, $command->y + $y, $command->width, $command->height, $command->checked, $command->disabled, $command->semanticId),
             $command instanceof Image => new Image($command->x + $x, $command->y + $y, $command->width, $command->height, $command->asset, $command->semanticId),
             $command instanceof Rectangle => new Rectangle($command->x + $x, $command->y + $y, $command->width, $command->height, $command->color, $command->borderColor, $command->borderWidth, $command->semanticId),

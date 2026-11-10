@@ -25,6 +25,7 @@ use PDF\HtmlToPdf\Style\Color;
 use PDF\HtmlToPdf\Style\ComputedStyle;
 use PDF\HtmlToPdf\Style\Edges;
 use PDF\HtmlToPdf\Style\Length;
+use PDF\HtmlToPdf\Style\TextSpacing;
 use PDF\HtmlToPdf\UnsupportedPolicy;
 use PHPUnit\Framework\TestCase;
 
@@ -229,6 +230,24 @@ final class LayoutEngineTest extends TestCase
         foreach (range(1, 7) as $number) {
             self::assertCount(1, array_filter($all, static fn(Text $text): bool => $text->text === 'Row ' . $number));
         }
+    }
+
+    public function testRepeatedHeaderArtifactKeepsTheSpacingItWasMeasuredWith(): void
+    {
+        $spaced = $this->style(textSpacing: new TextSpacing(letterSpacing: 2.0, wordSpacing: 3.0));
+        $header = new Node('th', 'th', children: [$this->text('Head er', $spaced)], style: $this->style(display: 'table-cell'));
+        $rows = [];
+        foreach (range(1, 7) as $index) {
+            $rows[] = new Node('row-' . $index, 'tr', children: [new Node('cell-' . $index, 'td', children: [$this->text('Row ' . $index)], style: $this->style(display: 'table-cell'))], style: $this->style(display: 'table-row'));
+        }
+        $table = new Node('table', 'table', children: [new Node('head', 'thead', children: [new Node('header-row', 'tr', children: [$header], style: $this->style(display: 'table-row'))], style: $this->style(display: 'table-header-group')), new Node('rows', 'tbody', children: $rows, style: $this->style(display: 'table-row-group'))], style: $this->style(display: 'table', tableLayout: 'fixed'));
+        $result = $this->layout([$table], $this->options(height: 100));
+        $headers = array_values(array_filter($this->texts($result), static fn(Text $text): bool => $text->text === 'Head er'));
+        self::assertCount(2, $headers);
+        self::assertNull($headers[1]->semanticId);
+        self::assertEquals(new TextSpacing(2.0, 3.0), $headers[0]->spacing);
+        self::assertEquals($headers[0]->spacing, $headers[1]->spacing);
+        self::assertSame($headers[0]->font->measure('Head er', $headers[0]->size, $headers[0]->spacing), $headers[1]->font->measure('Head er', $headers[1]->size, $headers[1]->spacing));
     }
 
     public function testHiddenRowsInsideBothHeadAndBodyDoNotPaintOrCreateStructure(): void

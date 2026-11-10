@@ -12,4 +12,16 @@ use PDF\HtmlToPdf\Style\TextSpacing;
 final readonly class Text implements Command
 {
     public function __construct(public FontFace $font, public string $text, public float $size, public float $x, public float $y, public Color $color, public ?string $semanticId, public ?string $uri = null, public TextSpacing $spacing = new TextSpacing()) {}
+
+    /** Complete copy at another position: every shaping input travels with the command. */
+    public function at(float $x, float $y): self
+    {
+        return new self(...array_replace(get_object_vars($this), ['x' => $x, 'y' => $y]));
+    }
+
+    /** Complete artifact copy: the same shaped appearance without structure or link. */
+    public function detached(): self
+    {
+        return new self(...array_replace(get_object_vars($this), ['semanticId' => null, 'uri' => null]));
+    }
 }
