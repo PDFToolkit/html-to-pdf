@@ -2,7 +2,50 @@
 
 [English](CHANGELOG.md) · [Français](CHANGELOG.fr.md)
 
-## Unreleased
+## 0.5.0 — 2026-11-11
+
+- Complete the value grammar of the CSS1 font properties. `font-size` accepts the
+  seven absolute keywords, on a fixed table for a 12pt medium, and `larger` and
+  `smaller`, which scale the parent's computed size by 1.2 as both browser
+  witnesses do. `font-weight` accepts `bolder` and `lighter` with the
+  font-independent chart of CSS 2.1 15.6; `strong` and `b` are `bolder`.
+  `font-style` accepts `oblique` and `font-variant` accepts `small-caps`. The
+  `font` shorthand accepts all of them. An undeclared size, weight, style or
+  variant inherits the computed value itself.
+- Match fonts as CSS1 5.2.1 and CSS 2.1 15.2 describe. A `FontSet` labels its
+  four slots by position and accepts additional `FamilyFace` entries with an
+  explicit weight from 100 to 900, a normal, italic or oblique style and a
+  small-caps variant. Italic accepts an oblique face, other styles match exactly,
+  a family that is unbound or lacks the style is skipped, missing weights follow
+  the CSS 2.1 15.6 order and never fail, and the default family supplies its best
+  match. A character without a glyph is taken from the next family, by grapheme
+  cluster; list markers fall back the same way.
+- **Behavior change:** a missing bold or italic face and a family list without
+  any binding no longer raise `UnsupportedFeature`. CSS defines these cases, so
+  they now produce the informational diagnostics `font.weight-fallback`,
+  `font.style-fallback` and `font.default-family` in both policies, joined by
+  `font.cluster-split` and `font.small-caps-fallback`. Notes are deduplicated,
+  limited per code and never exhaust the diagnostic budget. `FontSet::face()`
+  keeps its exact slot lookup. A character absent from every supplied face is
+  still rejected.
+- Synthesize small capitals from the uppercase glyphs of the matched face at 0.8
+  of the font size, unless the caller labels a small-caps font. The source text,
+  spacing, `ActualText` and the PDF Unicode map stay as written; `ß` draws `SS`.
+  The OpenType `smcp` feature is not used.
+- `ComputedStyle` gains `fontSlant()` and the `slant` and `smallCaps` fields;
+  `Drawing\Text` gains `capitals`, `at()` and `detached()`. Each run of text in
+  another face or size is one `Text` command; adjoining runs of one link share a
+  single annotation rectangle. A family list is limited to 64 names.
+- Fix repeated table headers: their artifact copy lost letter and word spacing,
+  and a static radio snapshot in such a header raised a `LogicException`.
+- Add an original font example with caller-labeled bindings, native PDF checks of
+  embedded programs, faces, sizes, glyphs and advances, independent
+  Chromium/Firefox witnesses and negative oracle tests. Seven deviations, six of
+  them from the browser witnesses, are asserted by the oracles and listed in
+  `docs/css1.md` instead of hidden.
+- Zero font sizes, the `ex` unit, a missing-character symbol and language-specific
+  casing remain unsupported. The registry now records 54 partial and 8
+  unsupported requirements; CSS1, PDF/A and PDF/UA remain unqualified.
 
 ## 0.4.0 — 2026-11-09
 

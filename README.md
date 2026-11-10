@@ -6,23 +6,26 @@ An independent, object-oriented **native PHP** HTML/CSS paginator built on the
 PDFToolkit core. It produces selectable Unicode text, embedded TrueType fonts,
 images and a logical PDF structure tree without a browser or JavaScript engine.
 
-Version 0.4 extends the documented native input profile. HTML/CSS coverage remains
+Version 0.5 extends the documented native input profile. HTML/CSS coverage remains
 partial, and unsupported features are rejected by default. See
 [coverage](docs/coverage.md), [architecture](docs/architecture.md) and
 [examples](examples/README.md). Tagged output is not a PDF/UA or PDF/A certificate. Development follows
 [CSS1 → CSS2 → CSS2.1 → modules](docs/css-levels.md), with explicit qualification gates.
 
-Version 0.4 adds signed `word-spacing`, `letter-spacing` and first-line
-`text-indent`, including inherited lengths and percentage indentation. The
-[CSS1 examples](docs/css1.md) show these text properties alongside the historical
+Version 0.5 works through the CSS1 font properties: size keywords, `bolder` and
+`lighter`, `oblique`, synthesized `small-caps`, faces labeled with any of the nine
+weights, CSS font matching across the family list and per-character fallback.
+No bold, italic or oblique is synthesized. Version 0.4 added signed
+`word-spacing`, `letter-spacing` and first-line `text-indent`. The
+[CSS1 examples](docs/css1.md) show these properties alongside the historical
 box/float/clear case and independent borders. Text remains selectable and link
-annotations follow its adjusted geometry. The registry records 54 partial and
+annotations follow its geometry. The registry records 54 partial and
 8 unsupported requirements; **complete CSS1 remains unqualified**.
 
 ## Install
 
 ```sh
-composer require pdftoolkit/html-to-pdf:^0.4
+composer require pdftoolkit/html-to-pdf:^0.5
 ```
 
 The core is installed under its canonical Composer name `pdftoolkit/pdf:^0.12.2`.
@@ -59,8 +62,11 @@ file_put_contents('example.pdf', $result->pdf);
 File reads and writes in this example belong to the calling application. The
 converter accepts bytes, never fetches URLs, discovers system fonts or writes
 files implicitly. Supply the actual regular/bold/italic/bold-italic variants used
-by the document. Missing glyphs, unsupported scripts and absent variants fail
-explicitly. No synthetic bold or silent fallback font is used.
+by the document: no bold, italic or oblique is synthesized. An absent variant is
+matched to a supplied face as CSS defines and reported by an informational
+diagnostic; a character missing from one family is taken from the next listed
+family or the default family. Unsupported scripts and a character without a
+glyph in every candidate face fail explicitly. No system font is ever used.
 
 [Usage and resource policies](docs/usage.md) explains page geometry, explicit
 image/CSS catalogs, diagnostics and limits. Run the included examples with

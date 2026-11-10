@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "packageVersion": "0.4.0",
+  "packageVersion": "0.5.0",
   "activeStage": "css1",
   "stageOrder": [
     "css1",
@@ -48,7 +48,7 @@
       "status": "partial",
       "sample": "serif",
       "context": "div",
-      "note": "Ordered named/generic families resolved against explicit FontCatalog bindings. A family that is unbound or lacks the requested style is skipped, and the default family is used when none matches, with an informational diagnostic. A character without a glyph in the matching face is taken, by grapheme cluster, from the matched face of the next listed family and finally from any face of the default family; a character none of these candidates has is rejected. A list is limited to 64 names. No system lookup.",
+      "note": "Ordered named/generic families resolved against explicit FontCatalog bindings. A family that is unbound or lacks the requested style is skipped, and the default family is used when none matches, with an informational diagnostic. A character without a glyph in the matching face is taken, by grapheme cluster, from the matched face of the next listed family and finally from any face of the default family; a character none of these candidates has is rejected. A list is limited to 64 names. Both browser witnesses stay in a listed family that lacks the requested style; skipping it follows CSS1 5.2.1 and is an asserted difference. No system lookup.",
       "tests": [
         "tests/Css/Css1RegistryTest.php",
         "tests/Css/FontDeclarationsTest.php",
@@ -56,7 +56,9 @@
         "tests/Font/FontMatcherTest.php",
         "tests/Font/TextItemizerTest.php",
         "tests/Layout/FontMatchingLayoutTest.php",
-        "tests/Layout/FontFallbackLayoutTest.php"
+        "tests/Layout/FontFallbackLayoutTest.php",
+        "tools/validate_fonts.py",
+        "tools/validate_fonts.cjs"
       ]
     },
     {
@@ -68,12 +70,14 @@
       "status": "partial",
       "sample": "italic",
       "context": "div",
-      "note": "normal, italic and oblique are distinct computed values. italic selects a face labeled italic or, failing that, oblique; oblique requires a face labeled oblique, otherwise the family is skipped and the default family offers its closest face with an informational diagnostic. No slant is synthesized; full context qualification is pending.",
+      "note": "normal, italic and oblique are distinct computed values. italic selects a face labeled italic or, failing that, oblique; oblique requires a face labeled oblique, otherwise the family is skipped and the default family offers its closest face with an informational diagnostic. One of the two browser witnesses matches italic and oblique faces as one set. No slant is synthesized; full context qualification is pending.",
       "tests": [
         "tests/Css/Css1RegistryTest.php",
         "tests/Css/FontStyleTest.php",
         "tests/Font/FontMatcherTest.php",
-        "tests/Layout/FontMatchingLayoutTest.php"
+        "tests/Layout/FontMatchingLayoutTest.php",
+        "tools/validate_fonts.py",
+        "tools/validate_fonts.cjs"
       ]
     },
     {
@@ -85,12 +89,14 @@
       "status": "partial",
       "sample": "small-caps",
       "context": "div",
-      "note": "normal and small-caps, inherited. A face labeled as a small-caps font is preferred and drawn as written; otherwise lowercase letters are drawn with the uppercase glyphs of the matching face at 0.8 of the font size, using the unconditional Unicode uppercase mapping of the PHP runtime and keeping the source text for extraction. The OpenType smcp feature is not used, the scale differs from one of the two browser witnesses, and no language-specific casing applies; full context qualification is pending.",
+      "note": "normal and small-caps, inherited. A face labeled as a small-caps font is preferred and drawn as written; otherwise lowercase letters are drawn with the uppercase glyphs of the matching face at 0.8 of the font size, using the unconditional Unicode uppercase mapping of the PHP runtime and keeping the source text in ActualText and the PDF Unicode map. Each run carries its own ActualText, so a line made only of one-letter words can lose its spaces in position-based extraction. The OpenType smcp feature is not used although both browser witnesses use it, the scale differs from one of them, a labeled small-caps face has no browser counterpart, and no language-specific casing applies; full context qualification is pending.",
       "tests": [
         "tests/Css/Css1RegistryTest.php",
         "tests/Css/FontVariantTest.php",
         "tests/Font/SmallCapitalsTest.php",
-        "tests/Layout/SmallCapsLayoutTest.php"
+        "tests/Layout/SmallCapsLayoutTest.php",
+        "tools/validate_fonts.py",
+        "tools/validate_fonts.cjs"
       ]
     },
     {
@@ -107,7 +113,9 @@
         "tests/Css/Css1RegistryTest.php",
         "tests/Css/FontWeightKeywordsTest.php",
         "tests/Font/FontMatcherTest.php",
-        "tests/Layout/FontMatchingLayoutTest.php"
+        "tests/Layout/FontMatchingLayoutTest.php",
+        "tools/validate_fonts.py",
+        "tools/validate_fonts.cjs"
       ]
     },
     {
@@ -119,10 +127,12 @@
       "status": "partial",
       "sample": "18pt",
       "context": "div",
-      "note": "Absolute keywords index a fixed table for a 12pt (16 CSS px) medium and larger/smaller scale the parent's computed size by 1.2, as both browser witnesses compute; the CSS1 example making larger from medium equal large is a recorded deviation. Positive supported lengths and percentages. Zero sizes and the ex unit remain unsupported; full context qualification is pending.",
+      "note": "Absolute keywords index a fixed table for a 12pt (16 CSS px) medium and larger/smaller scale the parent's computed size by 1.2, as both browser witnesses compute; the CSS1 example making larger from medium equal large is a recorded deviation. Positive supported lengths and percentages. Zero sizes, sizes above 1000pt and the ex unit remain unsupported; full context qualification is pending.",
       "tests": [
         "tests/Css/Css1RegistryTest.php",
-        "tests/Css/FontSizeKeywordsTest.php"
+        "tests/Css/FontSizeKeywordsTest.php",
+        "tools/validate_fonts.py",
+        "tools/validate_fonts.cjs"
       ]
     },
     {
@@ -134,14 +144,16 @@
       "status": "partial",
       "sample": "italic 12pt serif",
       "context": "div",
-      "note": "Atomic supported font shorthand with a size or size keyword, every weight, style and variant value, optional line height and family list; omitted components reset. Zero sizes and the ex unit remain unsupported; full context qualification is pending.",
+      "note": "Atomic supported font shorthand with a size or size keyword, every weight, style and variant value, optional line height and family list; omitted components reset. Zero sizes, sizes above 1000pt and the ex unit remain unsupported; full context qualification is pending.",
       "tests": [
         "tests/Css/Css1RegistryTest.php",
         "tests/Css/FontDeclarationsTest.php",
         "tests/Css/FontSizeKeywordsTest.php",
         "tests/Css/FontWeightKeywordsTest.php",
         "tests/Css/FontStyleTest.php",
-        "tests/Css/FontVariantTest.php"
+        "tests/Css/FontVariantTest.php",
+        "tools/validate_fonts.py",
+        "tools/validate_fonts.cjs"
       ]
     },
     {
@@ -374,9 +386,12 @@
       "status": "partial",
       "sample": "1.5",
       "context": "div",
-      "note": "Numbers, supported lengths and percentages; full inline line-box rules remain unqualified.",
+      "note": "Numbers, supported lengths and percentages. normal is 4/3 of the font size, above the 1.0 to 1.2 range CSS1 5.4.8 suggests, where both browser witnesses use the font metrics; full inline line-box rules remain unqualified.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/FontDeclarationsTest.php",
+        "tools/validate_fonts.py",
+        "tools/validate_fonts.cjs"
       ]
     },
     {
@@ -928,14 +943,16 @@
       "name": "font-matching",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
       "status": "partial",
-      "note": "Caller-labeled faces are matched per element in the order style, variant and weight of CSS 2.1 15.2: italic accepts oblique, other styles match exactly, a family without the style or without a binding is skipped, weights follow CSS 2.1 15.6 and never fail, and the default family supplies its best match with an informational diagnostic. A character without a glyph falls back through the candidate faces by grapheme cluster; a cluster no single face covers is divided by character and reported. Runs are shaped separately, so kerning and ligatures do not cross a font change, and the line box keeps the metrics of the first face. The candidates are one matched face per listed family, then every face of the default family; a character none of them has raises UnsupportedFeature instead of the missing-character symbol CSS 2.1 recommends. A face that draws text without the requested style or from the other side of the bold threshold is reported, whether it draws a run or a single character. small-caps prefers a face labeled as a small-caps font and otherwise synthesizes scaled capitals; no weight or slant is synthesized.",
+      "note": "Caller-labeled faces are matched per element in the order style, variant and weight of CSS 2.1 15.2: italic accepts oblique, other styles match exactly, a family without the style or without a binding is skipped, weights follow CSS 2.1 15.6 and never fail, and the default family supplies its best match with an informational diagnostic. A character without a glyph falls back through the candidate faces by grapheme cluster; a cluster no single face covers is divided by character and reported. Runs are shaped separately, so kerning and ligatures do not cross a font change, and each styled run contributes the metrics of its first matching face to the line box, which a character taken from a fallback face does not change. The candidates are one matched face per listed family, then every face of the default family; a character none of them has raises UnsupportedFeature instead of the missing-character symbol CSS 2.1 recommends. A face that draws text without the requested style or from the other side of the bold threshold is reported, whether it draws a run or a single character. small-caps prefers a face labeled as a small-caps font and otherwise synthesizes scaled capitals; no weight or slant is synthesized.",
       "tests": [
         "tests/Font/FontMatcherTest.php",
         "tests/Font/FamilyFaceTest.php",
         "tests/Font/TextItemizerTest.php",
         "tests/Layout/FontMatchingLayoutTest.php",
         "tests/Layout/FontFallbackLayoutTest.php",
-        "tests/Rendering/FontFallbackRenderingTest.php"
+        "tests/Rendering/FontFallbackRenderingTest.php",
+        "tools/validate_fonts.py",
+        "tools/validate_fonts.cjs"
       ]
     },
     {

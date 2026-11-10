@@ -2,7 +2,7 @@
 
 [Français](fr/css-levels.md)
 
-Version 0.4 is an **incomplete native HTML/CSS-to-PDF foundation**. It does not claim complete CSS1, CSS2, CSS 2.1, or “CSS3” support. Accepting a property name is not evidence that all its values, applicable elements, inherited states, layout interactions and error rules work.
+Version 0.5 is an **incomplete native HTML/CSS-to-PDF foundation**. It does not claim complete CSS1, CSS2, CSS 2.1, or “CSS3” support. Accepting a property name is not evidence that all its values, applicable elements, inherited states, layout interactions and error rules work.
 
 The work proceeds in this order:
 
@@ -34,19 +34,31 @@ A release that intends to claim a complete stage must use the additional gate:
 python3 tools/check_css_coverage.py --require-stage css1 --report _build/css1-gate.json
 ```
 
-For version 0.4, **exit code 1 and `status: "incomplete"` are the expected result**. Normal builds may publish the honestly described partial foundation; they must not treat that publication as CSS1 completion. The stage gate is mandatory when making that completion claim, not an optional way to suppress a failed conformance check.
+For version 0.5, **exit code 1 and `status: "incomplete"` are the expected result**. Normal builds may publish the honestly described partial foundation; they must not treat that publication as CSS1 completion. The stage gate is mandatory when making that completion claim, not an optional way to suppress a failed conformance check.
 
 The checker rejects duplicate identities, missing or replaced CSS1 properties, unknown states, missing test files, paths outside the repository and premature completion claims. Claiming completion requires a complete, nonempty inventory, all requirements `validated`, a hash-matched full-stage receipt with complete value/context coverage, and completion of every preceding stage. A parser-witness receipt is explicitly insufficient. The [negative gate tests](../tools/test_css_coverage.py) exercise those distinctions, including the real nonzero CLI exit for incomplete CSS1.
 
-Future qualification must expand each property into its values and contexts, include valid and invalid inputs, inheritance and shorthand interactions, compare independent layout/rendering evidence, and retain exact-version receipts. For example, supporting `margin-top: 6pt` with positive margin collapsing does not establish negative, percentage or `auto` margins; a successful root/body background witness does not qualify every canvas context; explicit family binding does not implement per-character fallback or the complete font-matching algorithm. These gaps remain visible in the registry until their corresponding work and validation are complete.
+Future qualification must expand each property into its values and contexts, include valid and invalid inputs, inheritance and shorthand interactions, compare independent layout/rendering evidence, and retain exact-version receipts. For example, supporting `margin-top: 6pt` with positive margin collapsing does not establish negative, percentage or `auto` margins; a successful root/body background witness does not qualify every canvas context; font matching over caller-labeled faces does not qualify font-size zero, the `ex` unit or the missing-character symbol. These gaps remain visible in the registry until their corresponding work and validation are complete.
 
 
-The 0.4 milestone adds signed word/letter spacing and first-line indentation to
-the [CSS1 examples](css1.md). Shared shaping preserves selectable Unicode and
-consistent wrapping, painting and link bounds; selected browser/PDF witnesses
-cover graphemes, whitespace, inherited lengths and indentation. These three
-entries become `partial`, not `validated`. Remaining work includes transformation,
-justification, complete font matching and decoration, along with the remaining
-box/background/list contexts. Floats still need intrinsic sizing and pagination.
-Release qualification records the exact candidate; inventory counts are not a
-substitute for its receipts.
+The 0.5 milestone works through the font chapter of CSS1 (section 5.2), shown
+in the [CSS1 examples](css1.md): every value of `font-size`, `font-weight`,
+`font-style`, `font-variant` and the `font` shorthand is accepted except a zero
+size, a size above 1000pt and the `ex` unit, faces are matched in the order style, variant, weight
+across the family list, and a character without a glyph falls back to the next
+family. Where CSS1 and CSS 2.1 define a feature differently, CSS 2.1 is followed,
+as the CSS1 status note asks: the `bolder`/`lighter` chart and the selection of
+missing weights. Seven deviations are asserted by the oracles instead of being
+hidden, and the CSS1 examples list them. Two of them are conventions of sizing
+and matching. `larger` and `smaller` use the fixed ratio that both browser witnesses
+compute and CSS Fonts 4 allows, not the table step of the CSS1 example. A family
+without the requested style is skipped, as CSS1 and CSS 2.1 require, whereas the
+browser witnesses stay in that family. `font-variant` moves from `unsupported` to
+`partial` and font matching from `unsupported` to `partial`; none becomes
+`validated`.
+
+The 0.4 milestone added signed word/letter spacing and first-line indentation.
+Remaining work includes transformation, justification and decoration, along with
+the remaining box/background/list contexts, units and percentages. Floats still
+need intrinsic sizing and pagination. Release qualification records the exact
+candidate; inventory counts are not a substitute for its receipts.

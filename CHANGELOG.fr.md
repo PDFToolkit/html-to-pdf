@@ -2,7 +2,57 @@
 
 [English](CHANGELOG.md) · [Français](CHANGELOG.fr.md)
 
-## Non publié
+## 0.5.0 — 2026-11-11
+
+- Compléter la grammaire des valeurs des propriétés de police CSS1. `font-size`
+  accepte les sept mots-clés absolus, sur une table fixe pour un `medium` de 12pt,
+  ainsi que `larger` et `smaller`, qui multiplient ou divisent par 1,2 la taille
+  calculée du parent comme le font les deux navigateurs témoins. `font-weight`
+  accepte `bolder` et `lighter` selon la table de CSS 2.1 15.6, indépendante des
+  polices ; `strong` et `b` valent `bolder`. `font-style` accepte `oblique` et
+  `font-variant` accepte `small-caps`. Le raccourci `font` les accepte tous. Une
+  taille, une graisse, un style ou une variante non déclarés héritent de la valeur
+  calculée elle-même.
+- Apparier les polices comme le décrivent CSS1 5.2.1 et CSS 2.1 15.2. Un `FontSet`
+  étiquette ses quatre emplacements par position et accepte des `FamilyFace`
+  supplémentaires avec une graisse explicite de 100 à 900, un style normal,
+  italique ou oblique et une variante petites capitales. L’italique accepte une
+  face oblique, les autres styles exigent leur étiquette exacte, une famille non
+  liée ou sans le style est ignorée, les graisses absentes suivent l’ordre de
+  CSS 2.1 15.6 sans jamais échouer, et la famille par défaut fournit sa meilleure
+  correspondance. Un caractère sans glyphe est pris dans la famille suivante, par
+  grappe de graphèmes ; les puces de liste suivent le même repli.
+- **Changement de comportement :** une face grasse ou italique absente et une
+  liste de familles sans aucune liaison ne lèvent plus `UnsupportedFeature`. CSS
+  définit ces cas : ils produisent désormais les diagnostics informatifs
+  `font.weight-fallback`, `font.style-fallback` et `font.default-family` dans les
+  deux politiques, complétés par `font.cluster-split` et
+  `font.small-caps-fallback`. Les notes sont dédoublonnées, limitées par code et
+  n’épuisent jamais le budget de diagnostics. `FontSet::face()` garde sa recherche
+  exacte d’emplacement. Un caractère absent de toutes les faces fournies reste refusé.
+- Synthétiser les petites capitales avec les capitales de la face appariée à 0,8
+  fois le corps, sauf si l’appelant étiquette une police de petites capitales. Le
+  texte source, les espacements, `ActualText` et la table Unicode du PDF restent
+  tels qu’écrits ; `ß` dessine `SS`. La fonctionnalité OpenType `smcp` n’est pas
+  utilisée.
+- `ComputedStyle` reçoit `fontSlant()` et les champs `slant` et `smallCaps` ;
+  `Drawing\Text` reçoit `capitals`, `at()` et `detached()`. Chaque segment de texte
+  dans une autre face ou un autre corps est une commande `Text` ; les segments
+  contigus d’un même lien partagent un seul rectangle d’annotation. Une liste de
+  familles est limitée à 64 noms.
+- Corriger les en-têtes de tableau répétés : leur copie d’artefact perdait les
+  espacements de lettres et de mots, et un bouton radio statique placé dans un tel
+  en-tête levait une `LogicException`.
+- Ajouter un exemple original de polices avec des liaisons étiquetées par
+  l’appelant, des contrôles PDF natifs des programmes incorporés, faces, corps,
+  glyphes et avances, des témoins Chromium/Firefox indépendants et des tests
+  négatifs des oracles. Sept écarts, dont six avec les témoins navigateur, sont
+  affirmés par les oracles et énumérés dans `docs/fr/css1.md` au lieu d’être
+  masqués.
+- La taille de police nulle, l’unité `ex`, le symbole de caractère manquant et les
+  règles de casse propres à une langue restent absents. Le registre compte
+  désormais 54 exigences partielles et 8 absentes ; CSS1, PDF/A et PDF/UA restent
+  non qualifiés.
 
 ## 0.4.0 — 2026-11-09
 

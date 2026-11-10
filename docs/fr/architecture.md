@@ -67,7 +67,32 @@ Une option de rendu ne remplace pas un algorithme de mise en page absent.
 
 `FontCatalog` résout les listes immuables de familles uniquement dans les noms
 et génériques fournis par l’appelant. `FontDeclarations` développe le raccourci
-pris en charge avant cascade ; `InlineFormatter` mesure et peint avec cette police.
+pris en charge avant cascade ; `InlineFormatter` mesure et peint avec les faces appariées.
+
+L’appariement des polices se répartit entre des objets purs et un consommateur à
+état. `FamilyFace` porte les étiquettes de l’appelant (style, graisse, variante
+petites capitales) et `FontSet` est une famille de telles faces. `FontMatcher`
+applique CSS 2.1 15.2 et renvoie une `FaceChain` : les familles listées dont le
+style correspond, puis la meilleure correspondance de la famille par défaut,
+suivie de ses autres faces en dernier recours pour un caractère qu’aucune ne
+possède.
+`TextItemizer` découpe un texte en segments `TextSegment` par grappe de graphèmes,
+en demandant à chaque face le glyphe qu’elle dessinerait réellement, c’est-à-dire,
+pour les petites capitales synthétisées, la capitale que `SmallCapitals` associe à
+une lettre. La couverture ne lit que la table de caractères : sonder une face de
+repli ne prépare aucune table de façonnage. Aucun de ces objets ne connaît les
+diagnostics ni les budgets.
+
+`InlineFormatter` détient l’état limité à la conversion : chaînes par style
+calculé, découpages et mesures dans le budget de façonnage, et notes informatives
+`font.*`, que `Diagnostics::inform()` enregistre sans jamais interrompre une
+conversion. Chaque segment devient une commande `Text` avec sa face et son corps ;
+`Text::$capitals` demande au façonneur la mise en capitales tandis que la commande
+conserve le texte source. Un segment commence où le précédent se termine, avec
+les mêmes avances mesurées que celles de la coupure des lignes, des décorations
+et des rectangles de lien. `FontSizes` et `FontWeights` résolvent les mots-clés
+pendant le calcul des styles, où une taille, une graisse, un style ou une variante
+non déclarés héritent de la valeur calculée elle-même et non d’une forme sérialisée.
 `FloatContext`, `LineExclusions` et un `FloatWorkBudget` partagé bornent placement
 et exclusion des lignes. `FlowItem::paintHeight` sépare étendue visible et hauteur
 de flux ; les documents à flottants sont réunis en un contexte indivisible d’une page.

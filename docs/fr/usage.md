@@ -92,11 +92,12 @@ La page se configure par `PageSettings`, pas par `@page` dans cette version.
 
 Fournir des TrueType statiques à contours `glyf` dont l’incorporation est permise.
 Le parseur vérifie les restrictions d’incorporation et les `FontLimits` explicites.
-Les vraies variantes sont nécessaires. Le profil couvre le texte horizontal
+Aucun gras, italique ou oblique n’est synthétisé : un style ou une graisse utilise
+une face fournie, choisie par l’appariement CSS. Le profil couvre le texte horizontal
 latin, grec et cyrillique, ainsi que les caractères Common/Inherited admissibles.
 Il ne réalise pas bidi Unicode, découpage par script, shaping arabe/indien,
-mise en page CJK ou écriture verticale. Un glyphe ou script absent échoue
-explicitement, même en mode Report.
+mise en page CJK ou écriture verticale. Un caractère hors profil, ou sans glyphe
+dans toutes les familles fournies, échoue explicitement, même en mode Report.
 
 Les tableaux demandent `table-layout: fixed` en mode strict. Définir les largeurs
 dans la première ligne ou utiliser des colonnes égales. La [couverture](coverage.md)
@@ -104,8 +105,9 @@ précise les restrictions de fragmentation, espaces et boîtes.
 
 ## Familles de polices explicites
 
-Les listes CSS `font-family` choisissent la première famille enregistrée dans un
-`FontCatalog`. Les noms sont insensibles à la casse ; un nom entre guillemets
+Les listes CSS `font-family` sont parcourues dans l’ordre parmi les familles
+enregistrées dans un `FontCatalog`, selon l’[appariement des polices](#appariement-des-polices-et-repli-par-caractère).
+Les noms sont insensibles à la casse ; un nom entre guillemets
 reste distinct d’un mot-clé générique. Associer les génériques volontairement :
 
 ```php
@@ -122,13 +124,131 @@ $fonts = new FontSet($regular, catalog: new FontCatalog(
 // CSS : font: bold 10px/1.3 "Report Sans", sans-serif;
 ```
 
-Le `FontSet` par défaut sert toujours les documents sans déclaration CSS de
-famille. Une liste explicite sans correspondance enregistrée échoue. Après la
-sélection, la variante et chaque glyphe doivent exister dans la famille fournie :
-aucun remplacement par caractère, variante synthétique ou accès au système.
-Le raccourci `font` pris en charge est développé intégralement et réinitialise
-les composants omis. Petites capitales, tailles par mots-clés, polices système
-et correspondance relative des graisses restent absentes.
+Le `FontSet` par défaut sert les documents sans déclaration CSS de famille et
+constitue le dernier recours de toute liste de familles. Aucun accès au système
+de fichiers ni aux polices du système.
+
+### Faces étiquetées
+
+Un `FontSet` est une famille. Ses quatre emplacements nommés sont étiquetés par
+position : `regular` vaut normal 400, `bold` normal 700, `italic` italique 400 et
+`boldItalic` italique 700. Toute autre face s’ajoute avec des étiquettes explicites :
+
+```php
+use PDF\HtmlToPdf\Font\FamilyFace;
+use PDF\HtmlToPdf\Style\FontSlant;
+
+$family = new FontSet($regular, bold: $bold, italic: $italic, faces: [
+    new FamilyFace($light, 300),
+    new FamilyFace($black, 900),
+    new FamilyFace($slanted, 400, FontSlant::Oblique),
+    new FamilyFace($smallCapitals, 400, smallCaps: true),
+]);
+```
+
+Les étiquettes sont votre déclaration sur un fichier. Elles ne sont jamais lues
+dans la police ni déduites de son nom, et deux faces d’une famille ne peuvent pas
+partager le même style, la même variante et la même graisse. La face `regular`
+est la face normale 400 de la famille.
+
+### Appariement des polices et repli par caractère
+
+Le texte est apparié comme le décrivent CSS1 5.2.1 et CSS 2.1 15.2, dans l’ordre
+de la liste `font-family` :
+
+1. Un nom sans liaison est ignoré.
+2. Dans une famille, le style est essayé en premier. `italic` accepte une face
+   étiquetée italique ou, à défaut, oblique. `normal` et `oblique` exigent une face
+   portant exactement cette étiquette ; sinon la famille est ignorée.
+3. La variante vient ensuite : `small-caps` préfère une face étiquetée comme
+   police de petites capitales.
+4. La graisse n’échoue jamais. Une graisse absente choisit une face dans l’ordre
+   de CSS 2.1 15.6 : à partir de 600 les faces plus sombres d’abord, jusqu’à 300
+   les faces plus claires d’abord, tandis que 400 et 500 s’essaient l’une l’autre
+   avant les faces plus claires.
+5. Un caractère sans glyphe dans la face retenue est pris dans la famille suivante
+   de la liste. Un caractère de base et ses marques combinantes restent dans une
+   même face dès qu’une face les possède tous.
+6. La famille par défaut vient en dernier et fournit sa meilleure correspondance.
+   Ses autres faces suivent, en dernier recours, pour un caractère qu’aucune face
+   appariée ne sait dessiner.
+
+Ces résultats sont définis par CSS : ils n’échouent donc pas. L’appelant qui veut
+en être informé lit `ConversionResult::$diagnostics`, dans les deux politiques :
+
+| Code | Signification |
+|---|---|
+| `font.default-family` | Aucune famille listée n’a fourni de face ; la famille par défaut est utilisée. |
+| `font.style-fallback` | La face utilisée n’a pas le style demandé : la famille par défaut n’a pas de telle face, ou aucune qui possède le caractère. |
+| `font.weight-fallback` | La face utilisée est de l’autre côté du seuil de gras (600) par rapport à la demande. |
+| `font.cluster-split` | Aucune face ne possède tous les caractères d’une grappe de graphèmes ; ils sont dessinés avec des polices différentes. |
+| `font.small-caps-fallback` | Aucune face ne possède la capitale d’une lettre minuscule ; elle est dessinée telle quelle. |
+
+Les notes sont dédoublonnées, limitées à huit par code et comptées à part des
+diagnostics qu’une conversion doit enregistrer : elles n’épuisent jamais ce
+budget. Après la huitième, une entrée `Further <code> notes are omitted.` portant
+le même code clôt la série. Une face est signalée qu’elle dessine un segment
+entier ou un seul caractère pris par repli. Une combinaison est refusée dans les
+deux politiques : un `letter-spacing` non nul sur une grappe de graphèmes
+répartie entre plusieurs polices lève `UnsupportedFeature`.
+
+Chaque segment de texte dans une autre face ou un autre corps est façonné
+séparément et constitue une commande de dessin : crénage et ligatures ne
+traversent pas un changement de police. Les segments d’une même boîte en ligne
+partagent un seul rectangle de lien. Chaque segment stylé apporte à la boîte de
+ligne les métriques de sa première face appariée ; un caractère pris par repli
+dans une autre face ne la modifie pas. Une liste `font-family` est limitée à
+64 noms.
+
+Petites capitales et repli par caractère multiplient donc les commandes de texte,
+environ deux par mot pour les petites capitales synthétisées. Un long texte
+atteint plus tôt `maxCommands` et la limite de mémoire : environ deux à trois fois
+la mémoire du même texte tel qu’écrit, le chiffre haut valant pour les longs
+textes. Un espacement négatif s’apprécie segment par segment. En petites
+capitales une espace forme un segment à elle seule : un `word-spacing` négatif
+plus large qu’une espace est donc refusé, alors que le même texte tel qu’écrit
+garde une avance positive. Chaque segment porte aussi son propre `ActualText` :
+une ligne faite uniquement de mots d’une lettre en petites capitales synthétisées
+garde ses espaces dans l’ordre du contenu, mais un lecteur qui reconstitue les
+mots d’après la position des glyphes peut les réunir.
+
+`FontSet::face()` reste une recherche exacte d’un emplacement nommé et échoue
+toujours quand il est vide. La version 0.4 levait `UnsupportedFeature` pour une
+face grasse ou italique absente et pour une liste de familles sans liaison ; ces
+cas suivent désormais les règles ci-dessus.
+
+### Tailles, graisses, styles et petites capitales
+
+`font-size` accepte les sept mots-clés absolus et les deux relatifs, en plus des
+longueurs et pourcentages. La table est fixe pour un `medium` de 12pt (16 px CSS) :
+
+| Mot-clé | `xx-small` | `x-small` | `small` | `medium` | `large` | `x-large` | `xx-large` |
+|---|---|---|---|---|---|---|---|
+| Points | 6,75 | 7,5 | 9,75 | 12 | 13,5 | 18 | 24 |
+
+`larger` multiplie la taille calculée du parent par 1,2 et `smaller` la divise par
+1,2. C’est ce que calculent les deux navigateurs témoins et ce qu’autorise
+CSS Fonts 4. L’exemple de CSS1 où `larger` depuis `medium` donne `large` n’est
+donc pas reproduit : le résultat vaut 14,4pt et non 13,5pt. La taille nulle,
+une taille supérieure à 1000pt et l’unité `ex` ne sont pas prises en charge.
+
+`font-weight` accepte `normal`, `bold`, `bolder`, `lighter` et `100` à `900`. Les
+mots-clés relatifs suivent la table de CSS 2.1 15.6, indépendante des polices :
+depuis 400, `bolder` donne 700 et `lighter` 100. `strong` et `b` valent `bolder`.
+`font-style` accepte `normal`, `italic` et `oblique` ; `ComputedStyle::fontSlant()`
+renvoie les trois valeurs, tandis que le booléen `italic` reste vrai pour
+l’italique seulement.
+
+`font-variant: small-caps` dessine les minuscules avec les capitales de la face
+appariée à 0,8 fois le corps, sauf si cette face est étiquetée comme police de
+petites capitales. Capitales, chiffres, espaces et ponctuation sont inchangés. La
+mise en capitales est la correspondance Unicode inconditionnelle du moteur PHP
+(`ß` devient `SS`), sans règle propre à une langue, et le texte extrait reste
+celui de la source. La fonctionnalité OpenType `smcp` n’est pas utilisée.
+
+Le raccourci `font` accepte toutes les valeurs ci-dessus, est développé
+intégralement et réinitialise les composants omis, y compris `line-height`. Les
+mots-clés de polices système relèvent de CSS 2.1 et sont refusés.
 
 ## Espacements et retrait de première ligne
 
@@ -175,8 +295,8 @@ soulignements et annotations de lien. `ComputedStyle::textSpacing` expose les
 valeurs immuables `TextSpacing` en points (`null` signifie `normal`) ;
 `ComputedStyle::textIndent` expose un `TextIndent` signé avec son indicateur de
 pourcentage. L’[exemple et ses contrôles indépendants](css1.md#espacements-et-retrait-de-première-ligne)
-montrent le comportement implémenté. Justification, transformation, sélection
-complète des polices et décorations supplémentaires restent hors de ce jalon.
+montrent le comportement implémenté. Justification, transformation et décorations
+supplémentaires restent absentes.
 
 ## Flottants bornés et contrôles statiques
 

@@ -2,7 +2,7 @@
 
 [English](references.md) · [Français](fr/references.md)
 
-Reviewed on 2026-11-09. This independent MIT implementation uses primary
+Reviewed on 2026-11-10. This independent MIT implementation uses primary
 HTML/CSS specifications to define its supported profile. Its examples use
 original illustrations and separately licensed fonts.
 
@@ -14,6 +14,9 @@ original illustrations and separately licensed fonts.
 | [CSS syntax errors](https://www.w3.org/TR/CSS2/syndata.html#parsing-errors) | Declaration-local rejection and bounded recovery; complete browser recovery is not claimed. |
 | [CSS imports and cascade](https://www.w3.org/TR/CSS2/cascade.html#at-import) | Import source order, relative sheet identity, specificity and importance. Fetching is replaced by an explicit catalog. |
 | [CSS border properties](https://www.w3.org/TR/CSS2/box.html#border-properties) | Independent sides and shorthand semantics; the package documents its own keyword widths and supported contexts. |
+| [CSS1 font properties](https://www.w3.org/TR/2008/REC-CSS1-20080411/#font-properties) | Font matching order, family lists, style, variant, weight, size and shorthand values of section 5.2. Its status note gives precedence to CSS 2.1 where both define a feature. |
+| [CSS 2.1 fonts](https://www.w3.org/TR/2011/REC-CSS2-20110607/fonts.html) | Revised matching steps, the selection order of missing weights and the font-independent `bolder`/`lighter` chart (15.2 and 15.6). The missing-character symbol it recommends is not drawn. |
+| [CSS Fonts 4, font-size](https://www.w3.org/TR/css-fonts-4/#font-size-prop) | Permission to scale `larger` and `smaller` by a fixed ratio instead of stepping through the keyword table; no other part of this module is claimed. |
 | [CSS 2.1 text](https://www.w3.org/TR/2011/REC-CSS2-20110607/text.html) | Shared definitions for inherited text spacing and first-line indentation. Browser/PDF witnesses scope the implemented geometry; full text conformance remains unqualified. |
 | [CSS Cascade 5](https://www.w3.org/TR/css-cascade-5/) | Cascade/inheritance concepts; no claim for all levels, layers or scopes. |
 | [CSS Values 4](https://www.w3.org/TR/css-values-4/#absolute-lengths) | Absolute conversion: 1in = 96px = 72pt. |

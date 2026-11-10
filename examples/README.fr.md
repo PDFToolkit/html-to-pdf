@@ -6,7 +6,8 @@
 - [Catalogue](../docs/fr/catalogue.md) : trois images originales, retours et alternatives.
 - [Plusieurs pages](../docs/fr/multipage.md) : trente lignes, en-têtes répétés comme artefacts et saut forcé.
 
-- [Bordures CSS1](../docs/fr/css1.md) : huit styles, quatre côtés indépendants et couleurs RGB.
+- [Bordures CSS1](../docs/fr/css1.md#côtés-de-bordure-indépendants) : huit styles, quatre côtés indépendants et couleurs RGB.
+- [Propriétés de police](../docs/fr/css1.md#propriétés-de-police) : mots-clés de taille, neuf graisses, styles, petites capitales, appariement des familles et repli par caractère.
 - [Espacements et retraits](../docs/fr/css1.md#espacements-et-retrait-de-première-ligne) : longueurs signées, héritage, accents combinants et première ligne.
 
 ```sh
@@ -61,3 +62,25 @@ y compris la continuation native sur une nouvelle page. Les comparaisons
 navigateur portent sur une page continue, sans annoncer l’équivalence de leur
 pagination. Le [guide CSS1](../docs/fr/css1.md) précise installation, tests négatifs
 des oracles et contextes encore absents.
+
+L’[exemple des propriétés de police](sources/fonts.html) lit ses
+[liaisons de polices](sources/fonts.json) et possède son propre générateur. Cinq
+programmes TrueType fournis sont liés à des familles étiquetées, de sorte que
+chaque règle d’appariement reçoit sa réponse d’un programme différent. Exécuter
+la mesure navigateur avant l’oracle PDF :
+
+```sh
+php -d memory_limit=512M examples/generate-fonts.php _build/fonts
+node tools/validate_fonts.cjs _build/fonts/browser
+python tools/validate_fonts.py --pdf _build/fonts/fonts.pdf \
+  --manifest _build/fonts/manifest.json \
+  --browser-report _build/fonts/browser/browser-report.json \
+  --output _build/fonts/pdf
+```
+
+![Première page du PDF natif des propriétés de police](previews/fonts.png)
+
+L’oracle PDF identifie chaque programme incorporé, puis contrôle face, corps,
+glyphes, avances et texte Unicode de chaque fragment mesuré. Le
+[guide CSS1](../docs/fr/css1.md#propriétés-de-police) précise l’installation et
+énumère les sept écarts affirmés et ce que l’oracle ne couvre pas.

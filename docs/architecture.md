@@ -66,7 +66,29 @@ option cannot substitute for a missing layout algorithm.
 
 `FontCatalog` resolves immutable family lists only against caller-supplied named
 and generic bindings. `FontDeclarations` expands the supported shorthand before
-cascade; `InlineFormatter` measures and paints through the selected face.
+cascade; `InlineFormatter` measures and paints through the matched faces.
+
+Font matching is split into pure objects and one stateful consumer. `FamilyFace`
+carries the caller's labels (style, weight, small-caps variant) and `FontSet` is
+one family of them. `FontMatcher` applies CSS 2.1 15.2 and returns a `FaceChain`:
+the listed families whose style matches, then the default family's best match,
+followed by its other faces as a last resort for a character none of them has.
+`TextItemizer` divides a text into `TextSegment` runs by grapheme cluster, asking
+each face for the glyph it would really draw, which for synthesized small
+capitals is the uppercase glyph that `SmallCapitals` maps a letter to. Coverage
+reads the character map only, so probing a fallback face prepares no shaping
+table. None of these objects knows about diagnostics or budgets.
+
+`InlineFormatter` owns the conversion-scoped state: chains per computed style,
+itemizations and measurements within the shaping budget, and the informational
+`font.*` notes, which `Diagnostics::inform()` records without ever stopping a
+conversion. Each segment becomes one `Text` command with its own face and size;
+`Text::$capitals` asks the shaper for the uppercase mapping while the command
+keeps the source text. A segment starts where the previous one ends, with the
+same measured advances that line breaking, decorations and link bounds use.
+`FontSizes` and `FontWeights` resolve keywords during style computation, where
+an undeclared font size, weight, style or variant inherits the computed value
+itself rather than a serialized form.
 `FloatContext`, `LineExclusions` and a shared `FloatWorkBudget` bound placement
 and line exclusion. `FlowItem::paintHeight` separates visible extent from normal
 flow height; floated documents are assembled as one indivisible page context.

@@ -1,6 +1,94 @@
-# CSS1: text spacing, floats and borders
+# CSS1: fonts, text spacing, floats and borders
 
 [English](css1.md) · [Français](fr/css1.md)
+
+## Font properties
+
+Version 0.5 works through the six CSS1 font properties and the font matching of
+section 5.2.1: absolute and relative size keywords, the nine weights with
+`bolder` and `lighter`, `italic` and `oblique`, `small-caps`, the `font`
+shorthand, matching across the family list and fallback character by character.
+The [usage guide](usage.md#explicit-font-families) describes labeled faces, the
+matching steps, the informational diagnostics and the limits.
+
+[HTML source](../examples/sources/fonts.html) ·
+[Font bindings](../examples/sources/fonts.json) ·
+[Generator](../examples/generate-fonts.php)
+
+![First page of the native font properties PDF](../examples/previews/fonts.png)
+
+```css
+body { margin: 0; font: 14px/20px Lato, "Noto Sans"; color: #1d3340; }
+.larger { font-size: larger; }
+.bolder { font-weight: bolder; }
+.oblique { font-style: oblique; }
+.caps { font-variant: small-caps; }
+.inherited { font: italic small-caps bold 25px/50px Ladder; }
+```
+
+The example supplies five TrueType programs, four Lato faces and Noto Sans
+Regular, and binds them to families labeled by the caller. The families Ladder,
+Scale, Slant and Engraved deliberately give a program an unusual label, so that
+each possible answer of a rule is drawn by a different program and the chosen
+face can be read from glyph advances alone. Its 31 measured lines hold 130 short
+samples without kerning or ligatures. The manifest records the hashes of the
+source, the bindings and every font file.
+
+```sh
+php -d memory_limit=512M examples/generate-fonts.php _build/fonts
+node tools/validate_fonts.cjs _build/fonts/browser
+python tools/validate_fonts.py --pdf _build/fonts/fonts.pdf \
+  --manifest _build/fonts/manifest.json \
+  --browser-report _build/fonts/browser/browser-report.json \
+  --output _build/fonts/pdf
+python tools/test_fonts_oracle.py
+node tools/test_fonts_oracle.cjs
+```
+
+Install the pinned Python dependencies in `tools/validation-requirements.txt`,
+qpdf, Poppler and the browsers shown below. The PDF oracle finds `qpdf`,
+`pdftotext` and `pdftoppm` on the `PATH`, or through its `--qpdf`, `--pdftotext`
+and `--pdftoppm` options.
+
+Expected values are derived twice, in JavaScript and in Python, from CSS1 5.2,
+CSS 2.1 15 and the font tables; neither oracle reads the converter sources. The
+browser oracle compares computed values, sample positions, widths and the face
+each browser chose. The PDF oracle identifies every embedded program against the
+supplied files, then checks the face, size, glyph identifiers, advances, position
+and Unicode text of each fragment, the informational diagnostics and the presence
+of ink at each sample. Values inside the PDF are compared within 0.000001pt;
+widths and positions against the browsers within 0.09pt and 0.225pt. Both oracles
+refuse to run when the bindings no longer separate the standard from rival rules
+such as nearest weight. Their negative controls reject every deliberately wrong
+observation.
+
+Seven deviations are asserted instead of hidden; an oracle fails if one of them
+disappears. The first is shared with both browsers and departs from a CSS1
+example; the six others are differences from the browser witnesses:
+
+- `larger` and `smaller` scale the inherited size by 1.2, in the converter and in
+  both browsers. The CSS1 example where `larger` from `medium` equals `large` is
+  not reproduced.
+- A family without a face of the requested style is skipped, as CSS1 5.2.1 and
+  CSS 2.1 15.2 require. Both browsers stay in the first family.
+- Faces labeled italic and oblique stay distinct, as in one browser. The other
+  matches them as one set.
+- Small capitals are synthesized at 0.8 of the font size, as in one browser. The
+  other uses 0.7.
+- A face labeled as a small-caps font is drawn as written. `@font-face` has no
+  such label, so both browsers synthesize from the other faces of the family.
+- The OpenType `smcp` feature is not used. Both browsers draw the small-capital
+  glyphs of a font that has them.
+- `line-height: normal`, restored by the `font` shorthand, is 4/3 of the font
+  size. Both browsers derive it from the font metrics, and CSS1 5.4.8 only
+  suggests a value between 1.0 and 1.2.
+
+The oracle does not cover vertical metrics beyond the distance between two
+baselines, kerning and ligatures across browsers, a default family with several
+faces, the `font.cluster-split` and `font.small-caps-fallback` diagnostics, or
+browser pagination. No bold, italic or oblique is synthesized; `font-size: 0`,
+the `ex` unit and a missing-character symbol remain unsupported. These selected
+observations do not qualify the font properties in every CSS1 context.
 
 ## Text spacing and first-line indentation
 
@@ -53,8 +141,8 @@ serve line breaking, drawing, decorations and link annotations.
 The percentage indent uses the content width of the block containing the lines,
 not a line's temporary width beside a float. The indent is not restarted by a
 `br`, page break or later anonymous inline fragment after an in-flow child block.
-A descendant block has its own first-line rule. Text transformation, justification,
-complete font matching and the remaining decoration contexts are still pending.
+A descendant block has its own first-line rule. Text transformation, justification
+and the remaining decoration contexts are still pending.
 An excessive negative spacing that produces a negative total run advance is
 rejected explicitly. Preserved tabs with nonzero letter or word spacing also
 raise `UnsupportedFeature`; normal-spacing tabs retain their existing profile,

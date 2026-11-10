@@ -7,8 +7,8 @@
    dependencies, without path/VCS overrides.
 2. Run Composer validation, platform checks, audit, PHPUnit, PHPStan and style.
    Generate all examples and run the independent qpdf/pypdf/Poppler oracle.
-   Include the text-spacing browser measurements and PDF oracle described in
-   `docs/css1.md`, with their negative controls.
+   Include the text-spacing and font browser measurements and PDF oracles
+   described in `docs/css1.md`, with their negative controls.
    Inspect every rendered page; retain tool versions, PDF hashes and reports.
    A passing syntax check is not a PDF/UA or PDF/A certification.
 3. Require the exact candidate commit to pass CI on PHP 8.3, 8.4 and 8.5.

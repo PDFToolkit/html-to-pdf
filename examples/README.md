@@ -7,6 +7,7 @@
 - [Multiple pages](../docs/multipage.md): thirty rows, repeated header artifacts and forced break.
 
 - [CSS1 borders](../docs/css1.md#independent-border-sides): eight styles, four independent sides and RGB colors.
+- [Font properties](../docs/css1.md#font-properties): size keywords, nine weights, styles, small capitals, family matching and character fallback.
 - [Text spacing and indentation](../docs/css1.md#text-spacing-and-first-line-indentation): signed lengths, inherited styles, combining marks and first-line behavior.
 
 ```sh
@@ -58,3 +59,25 @@ The PDF oracle checks glyph coordinates, Unicode and link annotations, including
 native page continuation. Browser comparisons concern continuous-page geometry,
 not browser pagination equivalence. The [CSS1 guide](../docs/css1.md) explains
 setup, negative oracle tests and remaining unsupported contexts.
+
+The [font properties example](sources/fonts.html) reads its
+[font bindings](sources/fonts.json) and has its own generator. Five supplied
+TrueType programs are bound to labeled families so that each matching rule is
+answered by a different program. Run the browser measurement before the PDF
+oracle:
+
+```sh
+php -d memory_limit=512M examples/generate-fonts.php _build/fonts
+node tools/validate_fonts.cjs _build/fonts/browser
+python tools/validate_fonts.py --pdf _build/fonts/fonts.pdf \
+  --manifest _build/fonts/manifest.json \
+  --browser-report _build/fonts/browser/browser-report.json \
+  --output _build/fonts/pdf
+```
+
+![First page of the native font properties PDF](previews/fonts.png)
+
+The PDF oracle identifies each embedded program, then checks the face, size,
+glyphs, advances and Unicode text of every measured fragment. The
+[CSS1 guide](../docs/css1.md#font-properties) explains setup and lists the seven
+asserted deviations and what the oracle does not cover.

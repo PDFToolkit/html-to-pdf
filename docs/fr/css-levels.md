@@ -2,7 +2,7 @@
 
 [English](../css-levels.md)
 
-La version 0.4 constitue une **base native HTML/CSS vers PDF encore incomplète**. Elle ne revendique pas une prise en charge complète de CSS1, CSS2, CSS 2.1 ou « CSS3 ». Accepter le nom d’une propriété ne prouve pas que toutes ses valeurs, ses éléments d’application, son héritage, ses interactions de mise en page et ses règles d’erreur fonctionnent.
+La version 0.5 constitue une **base native HTML/CSS vers PDF encore incomplète**. Elle ne revendique pas une prise en charge complète de CSS1, CSS2, CSS 2.1 ou « CSS3 ». Accepter le nom d’une propriété ne prouve pas que toutes ses valeurs, ses éléments d’application, son héritage, ses interactions de mise en page et ses règles d’erreur fonctionnent.
 
 Le travail suit cet ordre :
 
@@ -34,19 +34,34 @@ Une version souhaitant revendiquer une étape complète doit ajouter cette véri
 python3 tools/check_css_coverage.py --require-stage css1 --report _build/css1-gate.json
 ```
 
-Pour la version 0.4, **le code 1 et `status: "incomplete"` sont le résultat attendu**. Les constructions normales peuvent publier cette base partielle présentée honnêtement ; elles ne doivent pas assimiler sa publication à une qualification CSS1 complète. La vérification d’étape est obligatoire pour formuler cette revendication, pas une option permettant de masquer une conformité échouée.
+Pour la version 0.5, **le code 1 et `status: "incomplete"` sont le résultat attendu**. Les constructions normales peuvent publier cette base partielle présentée honnêtement ; elles ne doivent pas assimiler sa publication à une qualification CSS1 complète. La vérification d’étape est obligatoire pour formuler cette revendication, pas une option permettant de masquer une conformité échouée.
 
 L’outil refuse les identifiants dupliqués, propriétés CSS1 manquantes ou remplacées, états inconnus, tests absents, chemins extérieurs au dépôt et revendications prématurées. Une étape complète exige un inventaire complet non vide, toutes ses exigences `validated`, un reçu complet dont l’empreinte concorde et qui couvre valeurs et contextes, ainsi que la qualification des étapes précédentes. Un reçu de simple témoin d’analyse est explicitement insuffisant. Les [tests négatifs](../../tools/test_css_coverage.py) vérifient ces distinctions, y compris le vrai code de sortie non nul de la commande pour CSS1 incomplet.
 
-La qualification future devra détailler les valeurs et contextes de chaque propriété, inclure les entrées valides et invalides, l’héritage et les interactions des raccourcis, comparer des preuves indépendantes de mise en page et de rendu, puis conserver les reçus de versions exactes. Par exemple, `margin-top: 6pt` et la fusion de marges positives ne démontrent pas les marges négatives, en pourcentage ou `auto` ; un témoin réussi de fond html/body ne qualifie pas tous les contextes du fond de page ; des familles associées explicitement ne réalisent pas le remplacement par caractère ni l’algorithme complet de sélection des polices. Ces lacunes restent visibles dans le registre jusqu’à la fin de leur implémentation et de leur validation.
+La qualification future devra détailler les valeurs et contextes de chaque propriété, inclure les entrées valides et invalides, l’héritage et les interactions des raccourcis, comparer des preuves indépendantes de mise en page et de rendu, puis conserver les reçus de versions exactes. Par exemple, `margin-top: 6pt` et la fusion de marges positives ne démontrent pas les marges négatives, en pourcentage ou `auto` ; un témoin réussi de fond html/body ne qualifie pas tous les contextes du fond de page ; l’appariement des polices sur des faces étiquetées par l’appelant ne qualifie ni la taille de police nulle, ni l’unité `ex`, ni le symbole de caractère manquant. Ces lacunes restent visibles dans le registre jusqu’à la fin de leur implémentation et de leur validation.
 
 
-Le jalon 0.4 ajoute espacements signés des mots/lettres et retrait de première
-ligne aux [exemples CSS1](css1.md). Le shaping partagé conserve Unicode
-sélectionnable et cohérence des retours, du dessin et des annotations de lien ;
-des témoins navigateur/PDF ciblent graphèmes, blancs, longueurs héritées et
-retraits. Ces trois entrées deviennent `partial`, pas `validated`. Restent la
-transformation, la justification, la sélection complète des polices et les
-décorations, ainsi que les autres contextes de boîtes/fonds/listes. Les flottants
-demandent encore largeur intrinsèque et pagination. La qualification de release
-identifie le candidat exact ; les comptes du registre ne remplacent pas ses reçus.
+Le jalon 0.5 parcourt le chapitre des polices de CSS1 (section 5.2), illustré
+dans les [exemples CSS1](css1.md) : toutes les valeurs de `font-size`,
+`font-weight`, `font-style`, `font-variant` et du raccourci `font` sont acceptées,
+sauf la taille nulle, une taille supérieure à 1000pt et l’unité `ex` ; les faces sont appariées dans l’ordre
+style, variante, graisse sur la liste de familles ; un caractère sans glyphe se
+replie sur la famille suivante. Quand CSS1 et CSS 2.1 définissent différemment
+une fonctionnalité, CSS 2.1 est suivi, comme le demande la note de statut de
+CSS1 : table `bolder`/`lighter` et sélection des graisses manquantes. Sept écarts
+sont affirmés par les oracles au lieu d’être masqués, et les exemples CSS1 les
+énumèrent. Deux d’entre eux sont des conventions de taille et d’appariement.
+`larger` et
+`smaller` appliquent le rapport fixe que calculent les deux navigateurs témoins et
+qu’autorise CSS Fonts 4, non le pas de table de l’exemple de CSS1. Une famille
+sans le style demandé est ignorée, comme l’exigent CSS1 et CSS 2.1, alors que les
+navigateurs témoins restent dans cette famille. `font-variant` passe de
+`unsupported` à `partial`, de même que l’appariement des polices ; aucune entrée
+ne devient `validated`.
+
+Le jalon 0.4 avait ajouté espacements signés des mots/lettres et retrait de
+première ligne. Restent la transformation, la justification et les décorations,
+ainsi que les autres contextes de boîtes/fonds/listes, les unités et les
+pourcentages. Les flottants demandent encore largeur intrinsèque et pagination.
+La qualification de release identifie le candidat exact ; les comptes du registre
+ne remplacent pas ses reçus.

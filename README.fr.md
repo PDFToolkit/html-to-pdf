@@ -7,24 +7,27 @@ fondé sur le cœur PDFToolkit. Il produit du texte Unicode sélectionnable, des
 polices TrueType incorporées, des images et une structure logique PDF sans
 navigateur ni moteur JavaScript.
 
-La version 0.4 étend le profil d’entrée natif documenté. La couverture HTML/CSS
+La version 0.5 étend le profil d’entrée natif documenté. La couverture HTML/CSS
 reste partielle et les fonctions absentes sont refusées par défaut. Consulter la [couverture](docs/fr/coverage.md),
 l’[architecture](docs/fr/architecture.md) et les [exemples](examples/README.fr.md).
 Un PDF balisé ne constitue pas une certification PDF/UA ou PDF/A. Le travail suit
 [CSS1 → CSS2 → CSS2.1 → modules](docs/fr/css-levels.md), avec des critères de qualification explicites.
 
-La version 0.4 ajoute `word-spacing`, `letter-spacing` et le retrait de première
-ligne `text-indent`, avec longueurs signées héritées et retrait en pourcentage.
-Les [exemples CSS1](docs/fr/css1.md) montrent ces propriétés de texte, les bordures
-indépendantes et le cas historique boîtes/flottants/dégagement. Le texte reste
-sélectionnable et les annotations de lien suivent sa géométrie ajustée. Le
-registre compte 54 exigences partielles et 8 absentes ; **CSS1 complet reste
-non qualifié**.
+La version 0.5 parcourt les propriétés de police de CSS1 : tailles par
+mots-clés, `bolder` et `lighter`, `oblique`, `small-caps` synthétisées, faces
+étiquetées avec l’une des neuf graisses, appariement CSS sur la liste de familles
+et repli par caractère. Aucun gras, italique ou oblique n’est synthétisé. La
+version 0.4 avait ajouté `word-spacing` et `letter-spacing` signés et le retrait
+de première ligne `text-indent`. Les [exemples CSS1](docs/fr/css1.md) montrent ces
+propriétés, les bordures indépendantes et le cas historique
+boîtes/flottants/dégagement. Le texte reste sélectionnable et les annotations de
+lien suivent sa géométrie. Le registre compte 54 exigences partielles et
+8 absentes ; **CSS1 complet reste non qualifié**.
 
 ## Installation
 
 ```sh
-composer require pdftoolkit/html-to-pdf:^0.4
+composer require pdftoolkit/html-to-pdf:^0.5
 ```
 
 Le core est installé sous son nom Composer canonique `pdftoolkit/pdf:^0.12.2`.
@@ -61,9 +64,12 @@ file_put_contents('exemple.pdf', $result->pdf);
 Les lectures et écritures de cet exemple appartiennent à l’application appelante.
 Le convertisseur reçoit des octets ; il ne télécharge aucune URL, ne recherche
 aucune police système et n’écrit aucun fichier implicitement. Fournir les vraies
-variantes regular/bold/italic/bold-italic utilisées. Un glyphe, un script ou une
-variante absent provoque une erreur explicite, sans gras artificiel ni police de
-remplacement silencieuse.
+variantes regular/bold/italic/bold-italic utilisées : aucun gras, italique ou
+oblique n’est synthétisé. Une variante absente est appariée à une face fournie
+selon CSS et signalée par un diagnostic informatif ; un caractère absent d’une
+famille est pris dans la famille listée suivante ou dans la famille par défaut.
+Un script non pris en charge ou un caractère sans glyphe dans toutes les faces
+candidates provoque une erreur explicite. Aucune police système n’est utilisée.
 
 Le [guide](docs/fr/usage.md) décrit les pages, catalogues explicites d’images/CSS,
 diagnostics et limites. Après `composer install`, exécuter

@@ -90,11 +90,13 @@ supported font-relative values are converted before layout. Page size/margins
 are configured by `PageSettings`, not `@page` in this release.
 
 Supply static TrueType `glyf` fonts with embedding rights. Font parsing enforces
-embedding restrictions and explicit `FontLimits`. Actual variants are required;
-this release supports horizontal Latin, Greek and Cyrillic text plus supported
+embedding restrictions and explicit `FontLimits`. No bold, italic or oblique is
+synthesized: a style or weight uses a face you supply, chosen by CSS font matching.
+This release supports horizontal Latin, Greek and Cyrillic text plus supported
 Common/Inherited characters. It does not implement Unicode bidi, script
-itemization, Arabic/Indic shaping, CJK layout or vertical writing. A glyph outside
-the supplied face or supported profile fails explicitly, even in Report mode.
+itemization, Arabic/Indic shaping, CJK layout or vertical writing. A character
+outside the supported profile, or without a glyph in every supplied family,
+fails explicitly, even in Report mode.
 
 Tables require `table-layout: fixed` in strict mode. Choose explicit first-row
 column widths or equal columns. See [coverage](coverage.md) for the precise
@@ -102,8 +104,9 @@ fragmentation, whitespace and box restrictions.
 
 ## Explicit font families
 
-CSS `font-family` lists select the first family registered in a `FontCatalog`.
-Named families are case-insensitive; quoted names remain distinct from generic
+CSS `font-family` lists are matched, in order, against the families registered
+in a `FontCatalog`, as [font matching](#font-matching-and-character-fallback)
+describes. Named families are case-insensitive; quoted names remain distinct from generic
 keywords. Bind generic families deliberately rather than relying on system fonts:
 
 ```php
@@ -120,12 +123,123 @@ $fonts = new FontSet($regular, catalog: new FontCatalog(
 // CSS: font: bold 10px/1.3 "Report Sans", sans-serif;
 ```
 
-The default `FontSet` still serves documents without a CSS family declaration.
-An explicit list with no registered match fails. After family selection the
-requested variant and every glyph must exist in that supplied family; there is
-no per-character fallback, synthetic variant or filesystem lookup. The supported
-`font` shorthand expands atomically and resets omitted components. Small caps,
-size keywords, system-font keywords and relative weight matching remain absent.
+The default `FontSet` serves documents without a CSS family declaration and is
+the last resort of every family list. There is no filesystem or system lookup.
+
+### Labeled faces
+
+A `FontSet` is one family. Its four named slots are labeled by position: `regular`
+is normal 400, `bold` normal 700, `italic` italic 400 and `boldItalic` italic 700.
+Any other face is added with explicit labels:
+
+```php
+use PDF\HtmlToPdf\Font\FamilyFace;
+use PDF\HtmlToPdf\Style\FontSlant;
+
+$family = new FontSet($regular, bold: $bold, italic: $italic, faces: [
+    new FamilyFace($light, 300),
+    new FamilyFace($black, 900),
+    new FamilyFace($slanted, 400, FontSlant::Oblique),
+    new FamilyFace($smallCapitals, 400, smallCaps: true),
+]);
+```
+
+Labels are your statement about a file. They are never read from the font or
+guessed from its name, and two faces of one family cannot share the same style,
+variant and weight. The `regular` face is the family's normal 400 face.
+
+### Font matching and character fallback
+
+Text is matched as CSS1 5.2.1 and CSS 2.1 15.2 describe, in the order of the
+`font-family` list:
+
+1. A name without a binding is skipped.
+2. Inside a family the style is tried first. `italic` accepts a face labeled
+   italic or, failing that, oblique. `normal` and `oblique` need a face with that
+   exact label; otherwise the family is skipped.
+3. The variant comes next: `small-caps` prefers a face labeled as a small-caps font.
+4. The weight never fails. A missing weight selects a face in the CSS 2.1 15.6
+   order: for 600 and above darker faces first, for 300 and below lighter faces
+   first, while 400 and 500 try each other before the lighter faces.
+5. A character without a glyph in the matched face is taken from the next family
+   of the list. A base character and its combining marks stay in one face whenever
+   one face has them all.
+6. The default family comes last and supplies the best match it has. Its other
+   faces follow as a last resort for a character that no matched face can draw.
+
+These outcomes are defined by CSS, so they do not fail. A caller who needs to
+know about them reads `ConversionResult::$diagnostics`, in both policies:
+
+| Code | Meaning |
+|---|---|
+| `font.default-family` | No listed family supplied a face; the default family is used. |
+| `font.style-fallback` | The face used does not have the requested style: the default family has no such face, or none that has the character. |
+| `font.weight-fallback` | The face used is on the other side of the bold threshold (600) from the request. |
+| `font.cluster-split` | No single face has all characters of a grapheme cluster; they are drawn with different fonts. |
+| `font.small-caps-fallback` | No face has the uppercase glyph of a lowercase letter; it is drawn as written. |
+
+Notes are deduplicated, limited to eight per code and counted apart from the
+diagnostics a conversion must record, so they never exhaust that budget. After
+the eighth, one `Further <code> notes are omitted.` entry with the same code
+closes the series. A face is reported whether it draws a whole run or one
+character taken by fallback. One combination is rejected in both policies: a
+nonzero `letter-spacing` on a grapheme cluster divided between fonts raises
+`UnsupportedFeature`.
+
+Each run of text in another face or size is shaped on its own and is one drawing
+command: kerning and ligatures do not cross a font change. The runs of one inline
+box share one link rectangle. Each styled run contributes the metrics of its
+first matching face to the line box; a character taken from a fallback face does
+not change it. A `font-family` list is limited to 64 names.
+
+Small capitals and character fallback therefore multiply text commands, about two
+per word for synthesized small capitals. A long text reaches `maxCommands` and the
+memory limit sooner: about two to three times the memory of the same text as
+written, the higher figure for long texts. Negative spacing is judged run by run.
+In small capitals a space is a run of its own, so a negative `word-spacing` wider
+than a space is rejected although the same text as written keeps a positive
+advance. Each run also carries its own `ActualText`: a line made only of
+one-letter words in synthesized small capitals keeps its spaces in content order,
+but a reader that rebuilds words from glyph positions can join them.
+
+`FontSet::face()` remains an exact lookup of a named slot and still fails when
+the slot is empty. Version 0.4 raised `UnsupportedFeature` for a missing bold or
+italic face and for a family list without a binding; those cases now follow the
+rules above.
+
+### Sizes, weights, styles and small capitals
+
+`font-size` accepts the seven absolute keywords and the two relative ones, as
+well as lengths and percentages. The table is fixed for a 12pt (16 CSS px)
+medium:
+
+| Keyword | `xx-small` | `x-small` | `small` | `medium` | `large` | `x-large` | `xx-large` |
+|---|---|---|---|---|---|---|---|
+| Points | 6.75 | 7.5 | 9.75 | 12 | 13.5 | 18 | 24 |
+
+`larger` multiplies the parent's computed size by 1.2 and `smaller` divides it by
+1.2. This is what both browser witnesses compute and what CSS Fonts 4 allows. The
+CSS1 example in which `larger` from `medium` gives `large` is therefore not
+reproduced: the result is 14.4pt, not 13.5pt. A zero size, a size above 1000pt and the `ex` unit are
+not supported.
+
+`font-weight` accepts `normal`, `bold`, `bolder`, `lighter` and `100` to `900`.
+The relative keywords use the chart of CSS 2.1 15.6, which does not depend on
+the fonts: from 400, `bolder` gives 700 and `lighter` 100. `strong` and `b` are
+`bolder`. `font-style` accepts `normal`, `italic` and `oblique`;
+`ComputedStyle::fontSlant()` returns the three values, while the boolean `italic`
+remains true for italic only.
+
+`font-variant: small-caps` draws lowercase letters with the uppercase glyphs of
+the matched face at 0.8 of the font size, unless that face is labeled as a
+small-caps font. Capitals, digits, spaces and punctuation are unchanged. The
+uppercase mapping is the unconditional Unicode mapping of the PHP runtime
+(`ß` becomes `SS`), without language-specific rules, and the extracted text stays
+as written. The OpenType `smcp` feature is not used.
+
+The `font` shorthand accepts every value above, expands atomically and resets
+omitted components, including `line-height`. System-font keywords belong to
+CSS 2.1 and are rejected.
 
 ## Text spacing and first-line indentation
 
@@ -169,8 +283,8 @@ underlines and link bounds. `ComputedStyle::textSpacing` exposes immutable
 `TextSpacing` values in points (`null` means `normal`);
 `ComputedStyle::textIndent` exposes a signed `TextIndent` with its percentage flag.
 The [text example and independent checks](css1.md#text-spacing-and-first-line-indentation)
-show the implemented behavior. Justification, text transformation, full font
-matching and additional decorations remain outside this milestone.
+show the implemented behavior. Justification, text transformation and additional
+decorations remain unsupported.
 
 ## Bounded floats and static controls
 
