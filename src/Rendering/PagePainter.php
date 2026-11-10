@@ -65,7 +65,21 @@ final class PagePainter
         $bindings = [];
         $annotations = [];
         $objects = [];
+        /** @var array{uri:string,semanticId:string,baseline:float,end:float,bounds:Bounds}|null $link */
+        $link = null;
+        $close = function () use (&$link, &$annotations, &$objects): void {
+            if ($link !== null) {
+                $key = new IntegerType($this->nextAnnotationKey++);
+                $annotation = $this->link($link['uri'], $link['bounds'], $key);
+                $annotations[] = new IndirectReference($annotation);
+                $objects[] = [$this->semantics->link($link['semanticId']), $annotation, $key];
+                $link = null;
+            }
+        };
         foreach ($layout->commands as $command) {
+            if (!$command instanceof Text || $command->uri === null) {
+                $close();
+            }
             if (!$command instanceof Text && !$command instanceof Rectangle && !$command instanceof Image && !$command instanceof BorderBox && !$command instanceof RadioButton) {
                 throw new ConversionException('Unsupported drawing command.');
             }
@@ -93,10 +107,16 @@ final class PagePainter
                     if ($command->semanticId === null) {
                         throw new ConversionException('Decorative text cannot create an unassociated interactive link.');
                     }
-                    $key = new IntegerType($this->nextAnnotationKey++);
-                    $annotation = $this->link($command->uri, (new TextBounds())->calculate($command, $run, $layout->height), $key);
-                    $annotations[] = new IndirectReference($annotation);
-                    $objects[] = [$this->semantics->link($command->semanticId), $annotation, $key];
+                    // Runs of one inline box differ only by face or size: they share one link rectangle.
+                    $bounds = (new TextBounds())->calculate($command, $run, $layout->height);
+                    if ($link !== null && $link['uri'] === $command->uri && $link['semanticId'] === $command->semanticId
+                        && abs($link['baseline'] - $command->y) < 0.0001 && abs($link['end'] - $command->x) < 0.01) {
+                        $link['bounds'] = $link['bounds']->union($bounds);
+                    } else {
+                        $close();
+                        $link = ['uri' => $command->uri, 'semanticId' => $command->semanticId, 'baseline' => $command->y, 'bounds' => $bounds, 'end' => $command->x];
+                    }
+                    $link['end'] = $command->x + $run->width;
                 }
             } elseif ($command instanceof Image) {
                 $operators[] = new ConcatenateMatrix(new Matrix(
@@ -118,6 +138,7 @@ final class PagePainter
             $operators[] = new RestoreGraphicsState();
             $operators[] = new EndMarkedContent();
         }
+        $close();
         $page = new PageObject(
             new PdfRectangle(new NumericType(0), new NumericType(0), new NumericType($layout->width), new NumericType($layout->height)),
             $this->resources,

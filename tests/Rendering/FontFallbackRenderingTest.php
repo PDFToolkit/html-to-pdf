@@ -18,6 +18,7 @@ use PDF\Reading\FileBytes;
 use PDF\Reading\PageTreeReader;
 use PDF\Syntax\Object\ArrayType;
 use PDF\Syntax\Object\DictionaryType;
+use PDF\Syntax\Object\NumericType;
 use PHPUnit\Framework\TestCase;
 
 /** A fallback run is a real second embedded font, positioned where the first run ends. */
@@ -56,6 +57,37 @@ final class FontFallbackRenderingTest extends TestCase
 
         $annotations = $read->resolve($page->dictionary->get('Annots'));
         self::assertInstanceOf(ArrayType::class, $annotations);
-        self::assertCount(3, $annotations, 'one link rectangle per run, as for a link wrapped over several lines');
+        self::assertCount(1, $annotations, 'the runs of one inline box share one link rectangle');
+        $link = $read->resolve($annotations->items[0]);
+        self::assertInstanceOf(DictionaryType::class, $link);
+        $rectangle = $read->resolve($link->get('Rect'));
+        self::assertInstanceOf(ArrayType::class, $rectangle);
+        self::assertInstanceOf(NumericType::class, $rectangle->items[0]);
+        self::assertInstanceOf(NumericType::class, $rectangle->items[2]);
+        $end = 20 + $lato->measure('a', 10) + $noto->measure("\u{211D}", 10) + $lato->measure('b', 10);
+        self::assertLessThanOrEqual(20.0, $rectangle->items[0]->value);
+        self::assertGreaterThan(20.0 - 2, $rectangle->items[0]->value);
+        self::assertGreaterThanOrEqual($end - 0.0001, $rectangle->items[2]->value);
+        self::assertLessThan($end + 2, $rectangle->items[2]->value);
+    }
+
+    public function testALinkOverTwoLinesOrTwoElementsKeepsSeparateRectangles(): void
+    {
+        $lato = new FontFace(file_get_contents(dirname(__DIR__, 2) . '/examples/assets/fonts/Lato-Regular.ttf'));
+        $bold = new FontFace(file_get_contents(dirname(__DIR__, 2) . '/examples/assets/fonts/Lato-Bold.ttf'));
+        $options = new ConversionOptions(new FontSet($lato, bold: $bold), new PageSettings(300, 400, new Edges(20, 20, 20, 20)));
+        $count = static function (string $body) use ($options): int {
+            $html = '<!doctype html><html lang="en"><head><title>Links</title><style>*{margin:0;padding:0}body{font-size:10pt;line-height:12pt}</style></head><body>' . $body . '</body></html>';
+            $read = (new DocumentReader())->read(new FileBytes((new Converter())->convert(new HtmlSource($html), $options)->pdf));
+            $annotations = $read->resolve((new PageTreeReader($read))->read()->page(0)->dictionary->get('Annots'));
+            self::assertInstanceOf(ArrayType::class, $annotations);
+
+            return count($annotations->items);
+        };
+        self::assertSame(1, $count('<p><a href="https://example.test/">one two</a></p>'));
+        self::assertSame(2, $count('<p style="width:40pt"><a href="https://example.test/">wrapped wrapped</a></p>'), 'one rectangle per line');
+        self::assertSame(2, $count('<p><a href="https://example.test/">plain <b>bold</b></a></p>'), 'a nested element is another inline box');
+        self::assertSame(2, $count('<p><a href="https://example.test/a">one</a><a href="https://example.test/b">two</a></p>'), 'adjacent links stay distinct');
+        self::assertSame(1, $count('<p><a href="https://example.test/" style="font-variant:small-caps">Small Capitals Link</a></p>'), 'scaled capitals do not fragment the link');
     }
 }
