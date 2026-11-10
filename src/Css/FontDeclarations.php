@@ -36,7 +36,7 @@ final readonly class FontDeclarations
             } else {
                 $property = match (true) {
                     $part === 'italic' => 'font-style',
-                    $part === 'bold' || preg_match('/^[1-9]00$/D', $part) === 1 => 'font-weight',
+                    (new FontWeights())->isValue($part) => 'font-weight',
                     default => throw new \InvalidArgumentException('Unsupported font shorthand component: ' . $part),
                 };
                 if (isset($set[$property])) {

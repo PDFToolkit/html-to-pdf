@@ -81,19 +81,8 @@ final readonly class StyleComputer
             $display = 'block';
         }
         $this->value('font-variant', fn(): string => $this->values->keyword($css['font-variant'], ['normal']), 'normal');
-        $fontWeight = $this->value('font-weight', function () use ($css): int {
-            $value = strtolower($css['font-weight']);
-            if ($value === 'normal') {
-                return 400;
-            }
-            if ($value === 'bold') {
-                return 700;
-            }
-            if (preg_match('/^[1-9]00$/D', $value) !== 1) {
-                throw new \InvalidArgumentException('Unsupported font weight.');
-            }
-            return (int) $value;
-        }, $parent->style->fontWeight);
+        // A child inherits the resulting weight, never the relative keyword.
+        $fontWeight = $this->inheritedTextValue('font-weight', $declared, fn(string $value): int => (new FontWeights())->resolve($value, $parent->style->fontWeight), $parent->style->fontWeight, (new ComputedStyle())->fontWeight);
         $italic = $this->value('font-style', fn(): bool => $this->values->keyword($css['font-style'], ['normal', 'italic']) === 'italic', $parent->style->italic);
         $align = $this->value('text-align', fn(): string => $this->values->keyword($css['text-align'], ['left', 'center', 'right']), $parent->style->textAlign);
         $textValues = new TextValues();
@@ -237,8 +226,11 @@ final readonly class StyleComputer
             'head', 'style', 'link', 'meta', 'title', 'script', 'template' => 'none', default => 'inline',
         };
         $values = ['display' => $display];
-        if (in_array($tag, ['strong', 'b', 'th', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'], true)) {
+        if (in_array($tag, ['th', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'], true)) {
             $values['font-weight'] = '700';
+        }
+        if (in_array($tag, ['strong', 'b'], true)) {
+            $values['font-weight'] = 'bolder';
         }
         if (in_array($tag, ['em', 'i', 'address'], true)) {
             $values['font-style'] = 'italic';

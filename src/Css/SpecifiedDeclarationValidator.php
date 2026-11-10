@@ -74,7 +74,7 @@ final readonly class SpecifiedDeclarationValidator
                 }
                 return;
             case 'font-weight':
-                if (!in_array($value, ['normal', 'bold'], true) && preg_match('/^[1-9]00$/D', $value) !== 1) {
+                if (!(new FontWeights())->isValue($value)) {
                     throw new \InvalidArgumentException('Unsupported font weight.');
                 }
                 return;
