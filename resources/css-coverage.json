@@ -106,9 +106,10 @@
       "status": "partial",
       "sample": "18pt",
       "context": "div",
-      "note": "Positive supported lengths and percentages; keyword size matching is absent.",
+      "note": "Absolute keywords index a fixed table for a 12pt (16 CSS px) medium and larger/smaller scale the parent's computed size by 1.2, as both browser witnesses compute; the CSS1 example making larger from medium equal large is a recorded deviation. Positive supported lengths and percentages. Zero sizes and the ex unit remain unsupported; full context qualification is pending.",
       "tests": [
-        "tests/Css/Css1RegistryTest.php"
+        "tests/Css/Css1RegistryTest.php",
+        "tests/Css/FontSizeKeywordsTest.php"
       ]
     },
     {
@@ -120,10 +121,11 @@
       "status": "partial",
       "sample": "italic 12pt serif",
       "context": "div",
-      "note": "Atomic supported font shorthand with size, optional line height and family list; omitted components reset. Small caps, size/system keywords and relative weight matching remain unsupported.",
+      "note": "Atomic supported font shorthand with a size or size keyword, optional line height and family list; omitted components reset. Small caps, oblique and relative weight keywords remain unsupported.",
       "tests": [
         "tests/Css/Css1RegistryTest.php",
-        "tests/Css/FontDeclarationsTest.php"
+        "tests/Css/FontDeclarationsTest.php",
+        "tests/Css/FontSizeKeywordsTest.php"
       ]
     },
     {

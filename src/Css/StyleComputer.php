@@ -45,18 +45,9 @@ final readonly class StyleComputer
         $fontFamily = $css['font-family'] === '' ? new FontFamilyList() : $this->value('font-family', fn(): FontFamilyList => (new FontFamilyParser())->parse($css['font-family']), $parent->style->fontFamily);
         $float = $this->value('float', fn(): string => $this->values->keyword($css['float'], ['none', 'left', 'right']), 'none');
         $clear = $this->value('clear', fn(): string => $this->values->keyword($css['clear'], ['none', 'left', 'right', 'both']), 'none');
-        $fontSize = $parent->style->fontSize;
-        $fontSize = $this->value('font-size', function () use ($css, $parent, $rootSize): float {
-            $length = $this->values->length($css['font-size'], $parent->style->fontSize, $rootSize, true);
-            if (!$length instanceof Length) {
-                throw new \LogicException('Expected a positive length.');
-            }
-            $points = $length->resolve($parent->style->fontSize);
-            if ($points <= 0 || $points > 1000) {
-                throw new \InvalidArgumentException('Font size must be between zero and 1000 points.');
-            }
-            return $points;
-        }, $fontSize);
+        // Element defaults and author values are specified values; an undeclared size inherits the computed number itself.
+        $declared = array_replace($this->defaults($tag), $author);
+        $fontSize = $this->inheritedTextValue('font-size', $declared, fn(string $value): float => $this->fontSize($value, $parent->style->fontSize, $rootSize), $parent->style->fontSize, (new ComputedStyle())->fontSize);
         $lineFactor = $parent->lineHeightFactor;
         $lineHeight = $lineFactor !== null ? $lineFactor * $fontSize : $parent->style->lineHeight;
         if (isset($author['line-height'])) {
@@ -192,6 +183,24 @@ final readonly class StyleComputer
             'initial' => $initial,
             default => $this->value($property, static fn(): mixed => $parse($value), $inherited),
         };
+    }
+
+    /** Keywords index the UA table or scale the parent size; lengths and percentages bypass the table. */
+    private function fontSize(string $value, float $parentSize, float $rootSize): float
+    {
+        $points = (new FontSizes())->resolve($value, $parentSize);
+        if ($points === null) {
+            $length = $this->values->length($value, $parentSize, $rootSize, true);
+            if (!$length instanceof Length) {
+                throw new \LogicException('Expected a positive length.');
+            }
+            $points = $length->resolve($parentSize);
+        }
+        if (!is_finite($points) || $points <= 0 || $points > 1000) {
+            throw new \InvalidArgumentException('Font size must be between zero and 1000 points.');
+        }
+
+        return $points;
     }
 
     private function dimension(string $value, float $fontSize, float $rootSize, bool $percentage): ?Length

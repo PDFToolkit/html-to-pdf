@@ -43,7 +43,9 @@ final readonly class SpecifiedDeclarationValidator
                 (new FontFamilyParser())->parse($value);
                 return;
             case 'font-size':
-                $this->length($value, true, true);
+                if (!(new FontSizes())->isKeyword($value)) {
+                    $this->length($value, true, true);
+                }
                 return;
             case 'line-height':
                 if ($value === 'normal') {

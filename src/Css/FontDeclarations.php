@@ -16,6 +16,7 @@ final readonly class FontDeclarations
             return array_fill_keys(array_keys($result), $keyword);
         }
         $tokens = (new FontValueTokenizer())->tokenize($value);
+        $sizes = new FontSizes();
         $normal = 0;
         $set = [];
         $index = 0;
@@ -25,7 +26,7 @@ final readonly class FontDeclarations
             if ($token->quoted) {
                 throw new \InvalidArgumentException('A font shorthand needs a size before its family.');
             }
-            if (preg_match('/^[+]?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:px|pt|pc|mm|cm|in|em|rem|%)$/iD', $part) === 1) {
+            if ($sizes->isKeyword($part) || preg_match('/^[+]?(?:[0-9]+(?:\.[0-9]+)?|\.[0-9]+)(?:px|pt|pc|mm|cm|in|em|rem|%)$/iD', $part) === 1) {
                 $result['font-size'] = $part;
                 ++$index;
                 break;
