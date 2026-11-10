@@ -63,20 +63,33 @@ final readonly class PreparedLayout
         $this->spacedFeatures = new FeatureSelection(new Tag('latn'), features: [new Tag('kern'), new Tag('mark')]);
     }
 
-    public function create(UnicodeText $text, TextSpacing $spacing = new TextSpacing(), float $fontUnitsPerPoint = 1): ShapedText
+    /**
+     * With $capitals each source character is drawn with the glyphs of its uppercase mapping.
+     * Every glyph keeps the position of its source character, so spacing, extraction text and
+     * the PDF Unicode map still describe the text as written.
+     */
+    public function create(UnicodeText $text, TextSpacing $spacing = new TextSpacing(), float $fontUnitsPerPoint = 1, bool $capitals = false): ShapedText
     {
         if (count($text->codePoints) > $this->limits->maxOutputGlyphs) {
             throw new \InvalidArgumentException('Layout inputs exceed the explicit glyph budget.');
         }
         $glyphs = [];
-        foreach ($text->codePoints as $point) {
-            $glyph = $this->map->glyphFor(new CodePoint($point));
-            if ($glyph->value === 0) {
-                throw new \InvalidArgumentException(sprintf('No glyph for U+%04X.', $point));
+        $origins = [];
+        $mapping = new SmallCapitals();
+        foreach ($text->codePoints as $index => $point) {
+            foreach ($capitals ? $mapping->uppercase($point) : [$point] as $drawn) {
+                $glyph = $this->map->glyphFor(new CodePoint($drawn));
+                if ($glyph->value === 0) {
+                    throw new \InvalidArgumentException(sprintf('No glyph for U+%04X.', $drawn));
+                }
+                $glyphs[] = $glyph;
+                $origins[] = $index;
             }
-            $glyphs[] = $glyph;
         }
-        $sequence = new GlyphSequence($glyphs);
+        if (count($glyphs) > $this->limits->maxOutputGlyphs) {
+            throw new \InvalidArgumentException('Layout inputs exceed the explicit glyph budget.');
+        }
+        $sequence = new GlyphSequence($glyphs, $origins);
         $features = ($spacing->letterSpacing ?? 0) == 0 ? $this->features : $this->spacedFeatures;
         if ($this->substitution !== null) {
             $sequence = (new SubstitutionEngine($this->limits))->apply($this->substitution, $features, $sequence, $this->definition);

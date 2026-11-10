@@ -41,7 +41,7 @@ final class TextTest extends TestCase
     /** Every promoted field has a value distinct from its default, so a forgotten field cannot go unnoticed. */
     private function distinctText(): Text
     {
-        $text = new Text(self::$font, 'Witness', 11.5, 3.25, 4.75, new Color(0.1, 0.2, 0.3), 'semantic-7', 'https://example.test/', new TextSpacing(1.5, -0.5));
+        $text = new Text(self::$font, 'Witness', 11.5, 3.25, 4.75, new Color(0.1, 0.2, 0.3), 'semantic-7', 'https://example.test/', new TextSpacing(1.5, -0.5), true);
         $defaults = [];
         foreach ((new \ReflectionClass(Text::class))->getConstructor()?->getParameters() ?? [] as $parameter) {
             if ($parameter->isDefaultValueAvailable()) {

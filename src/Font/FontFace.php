@@ -25,12 +25,13 @@ final readonly class FontFace
         $this->layout = new LayoutPreparation($this->program->font, $reading);
     }
 
-    public function measure(string $text, float $size, TextSpacing $spacing = new TextSpacing()): float
+    public function measure(string $text, float $size, TextSpacing $spacing = new TextSpacing(), bool $capitals = false): float
     {
-        return $this->shape($text, $size, $spacing)->width;
+        return $this->shape($text, $size, $spacing, $capitals)->width;
     }
 
-    public function shape(string $text, float $size, TextSpacing $spacing = new TextSpacing()): FontRun
+    /** With $capitals the uppercase mapping of the text is shaped, while the run keeps the source text. */
+    public function shape(string $text, float $size, TextSpacing $spacing = new TextSpacing(), bool $capitals = false): FontRun
     {
         $metrics = $this->metrics($size);
         if (strlen($text) > $this->limits->maxTextBytes || preg_match('//u', $text) !== 1) {
@@ -41,7 +42,7 @@ final readonly class FontFace
             throw new UnsupportedFeature('This horizontal font profile supports Latin, Greek and Cyrillic, without bidirectional or complex-script shaping.');
         }
         try {
-            $shaped = $this->layout->create(new UnicodeText($text), $spacing, $this->program->source->metrics->unitsPerEm / $size);
+            $shaped = $this->layout->create(new UnicodeText($text), $spacing, $this->program->source->metrics->unitsPerEm / $size, $capitals);
         } catch (\InvalidArgumentException $error) {
             throw new UnsupportedFeature('The selected font cannot shape this text: ' . $error->getMessage(), previous: $error);
         }

@@ -15,6 +15,7 @@ use PDF\HtmlToPdf\Exception\UnsupportedFeature;
 use PDF\HtmlToPdf\Font\FaceChain;
 use PDF\HtmlToPdf\Font\FontFace;
 use PDF\HtmlToPdf\Font\FontMatcher;
+use PDF\HtmlToPdf\Font\SmallCapitals;
 use PDF\HtmlToPdf\Font\TextItemizer;
 use PDF\HtmlToPdf\Font\TextSegment;
 use PDF\HtmlToPdf\Style\ComputedStyle;
@@ -57,7 +58,7 @@ final class InlineFormatter
     {
         $width = 0.0;
         foreach ($this->segments($text, $style) as $segment) {
-            $width += $this->measure($segment->face->face, $segment->text, $style->fontSize, $style->textSpacing);
+            $width += $this->measure($segment->face->face, $segment->text, $this->size($segment, $style), $style->textSpacing, $segment->capitals);
         }
 
         return $width;
@@ -73,11 +74,18 @@ final class InlineFormatter
         $commands = [];
         $start = $x;
         foreach ($this->segments($text, $style) as $segment) {
-            $commands[] = new Text($segment->face->face, $segment->text, $style->fontSize, $x, $baseline, $style->color, $semanticId, $uri, $style->textSpacing);
-            $x += $this->measure($segment->face->face, $segment->text, $style->fontSize, $style->textSpacing);
+            $size = $this->size($segment, $style);
+            $commands[] = new Text($segment->face->face, $segment->text, $size, $x, $baseline, $style->color, $semanticId, $uri, $style->textSpacing, $segment->capitals);
+            $x += $this->measure($segment->face->face, $segment->text, $size, $style->textSpacing, $segment->capitals);
         }
 
         return [$commands, $x - $start];
+    }
+
+    /** Synthesized small capitals are uppercase glyphs at a reduced size on the same baseline. */
+    private function size(TextSegment $segment, ComputedStyle $style): float
+    {
+        return $segment->capitals ? $style->fontSize * SmallCapitals::SCALE : $style->fontSize;
     }
 
     /**
@@ -89,7 +97,7 @@ final class InlineFormatter
     private function segments(string $text, ComputedStyle $style): array
     {
         $chain = $this->chain($style);
-        if (count($chain->faces) === 1) {
+        if (count($chain->faces) === 1 && !$style->smallCaps) {
             return [new TextSegment($chain->primary(), $text)];
         }
         $this->measuredBytes += strlen($text);
@@ -99,7 +107,7 @@ final class InlineFormatter
         $key = spl_object_id($chain) . ':' . $text;
         $segments = $this->itemizations[$key] ?? null;
         if ($segments === null) {
-            $segments = $this->itemizer->itemize($text, $chain);
+            $segments = $this->itemizer->itemize($text, $chain, $style->smallCaps);
             $entryBytes = strlen($key) + 64 * count($segments);
             if (count($this->itemizations) < $this->options->limits->maxCommands
                 && $this->cachedBytes + $entryBytes <= min(4_194_304, $this->options->limits->maxTextCharacters * 16)) {
@@ -113,6 +121,9 @@ final class InlineFormatter
                     throw new UnsupportedFeature('Letter spacing across a grapheme divided between fonts requires shared cluster shaping.');
                 }
                 $this->note('font.cluster-split', 'No single face of ' . ($style->fontFamily->names === [] ? 'the default family' : $style->fontFamily->css()) . ' has every character of a grapheme cluster; its characters are drawn with different fonts.');
+            }
+            if ($segment->unchanged) {
+                $this->note('font.small-caps-fallback', 'No supplied face has the uppercase glyphs of a lowercase letter; it is drawn as written instead of as a small capital.');
             }
         }
 
@@ -257,9 +268,9 @@ final class InlineFormatter
             return $this->chains[$style];
         }
         $slant = $style->fontSlant();
-        $key = $style->fontFamily->css() . '|' . $slant->value . '|' . $style->fontWeight;
+        $key = $style->fontFamily->css() . '|' . $slant->value . '|' . $style->fontWeight . '|' . ($style->smallCaps ? 'small-caps' : 'normal');
         if (!isset($this->chainsByKey[$key])) {
-            $this->chainsByKey[$key] = $this->matcher->chain($this->options->fonts, $style->fontFamily, $slant, $style->fontWeight);
+            $this->chainsByKey[$key] = $this->matcher->chain($this->options->fonts, $style->fontFamily, $slant, $style->fontWeight, $style->smallCaps);
             $this->explain($this->chainsByKey[$key], $style, $slant);
         }
 
@@ -327,18 +338,18 @@ final class InlineFormatter
         return $width;
     }
 
-    private function measure(FontFace $font, string $text, float $size, TextSpacing $spacing): float
+    private function measure(FontFace $font, string $text, float $size, TextSpacing $spacing, bool $capitals = false): float
     {
         $this->measuredBytes += strlen($text);
         if ($this->measuredBytes > $this->options->limits->maxTextCharacters * 256) {
             throw new LimitExceeded('Cumulative text shaping work budget exhausted.');
         }
 
-        $key = spl_object_id($font) . ':' . $size . ':' . $spacing->cacheKey() . ':' . $text;
+        $key = spl_object_id($font) . ':' . $size . ':' . $spacing->cacheKey() . ':' . ($capitals ? 'C' : 'T') . ':' . $text;
         if (isset($this->measurements[$key])) {
             return $this->measurements[$key];
         }
-        $width = $font->measure($text, $size, $spacing);
+        $width = $font->measure($text, $size, $spacing, $capitals);
         $entryBytes = strlen($key) + 64;
         if (count($this->measurements) < $this->options->limits->maxCommands
             && $this->cachedBytes + $entryBytes <= min(4_194_304, $this->options->limits->maxTextCharacters * 16)) {

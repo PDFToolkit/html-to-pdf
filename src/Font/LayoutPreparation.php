@@ -22,11 +22,11 @@ final class LayoutPreparation
 
     public function __construct(private readonly SfntFont $font, private readonly ReadLimits $limits) {}
 
-    public function create(UnicodeText $text, TextSpacing $spacing = new TextSpacing(), float $fontUnitsPerPoint = 1): ShapedText
+    public function create(UnicodeText $text, TextSpacing $spacing = new TextSpacing(), float $fontUnitsPerPoint = 1, bool $capitals = false): ShapedText
     {
         $this->prepared ??= new PreparedLayout($this->font, $this->limits, $this->map());
 
-        return $this->prepared->create($text, $spacing, $fontUnitsPerPoint);
+        return $this->prepared->create($text, $spacing, $fontUnitsPerPoint, $capitals);
     }
 
     /** Coverage reads the character map only: probing a fallback face prepares no shaping table. */
