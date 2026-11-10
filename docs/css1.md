@@ -159,6 +159,6 @@ Chromium/Firefox witnesses for selected computed styles and box geometry. It
 identifies the exact candidate and tool versions. A preview alone does not prove
 browser/PDF equivalence or accessibility certification.
 
-The [coverage registry](../resources/css-coverage.json) records 52 partial and
-10 unsupported requirements. **CSS1 remains incomplete**, with further text/font work
+The [coverage registry](../resources/css-coverage.json) records 53 partial and
+9 unsupported requirements. **CSS1 remains incomplete**, with further text/font work
 remaining in the [qualification sequence](css-levels.md). No PDF/A or PDF/UA claim is made.

@@ -5,15 +5,18 @@ declare(strict_types=1);
 namespace PDF\HtmlToPdf\Layout;
 
 use PDF\HtmlToPdf\ConversionOptions;
+use PDF\HtmlToPdf\Diagnostics;
 use PDF\HtmlToPdf\Drawing\Image;
 use PDF\HtmlToPdf\Drawing\Rectangle;
 use PDF\HtmlToPdf\Drawing\RadioButton;
 use PDF\HtmlToPdf\Drawing\Text;
 use PDF\HtmlToPdf\Exception\LimitExceeded;
 use PDF\HtmlToPdf\Exception\UnsupportedFeature;
+use PDF\HtmlToPdf\Font\FaceChain;
 use PDF\HtmlToPdf\Font\FontFace;
-use PDF\HtmlToPdf\Font\FontStyle;
+use PDF\HtmlToPdf\Font\FontMatcher;
 use PDF\HtmlToPdf\Style\ComputedStyle;
+use PDF\HtmlToPdf\Style\FontSlant;
 use PDF\HtmlToPdf\Style\TextSpacing;
 
 /** Horizontal inline flow, measured with exactly the font shaper used by serialization. */
@@ -25,8 +28,23 @@ final class InlineFormatter
     private int $cachedBytes = 0;
     private int $lineCount = 0;
     private int $commandCount = 0;
+    private readonly FontMatcher $matcher;
+    /** @var \WeakMap<ComputedStyle, FaceChain> */
+    private \WeakMap $chains;
+    /** @var array<string, FaceChain> */
+    private array $chainsByKey = [];
+    /** @var array<string, true> */
+    private array $notes = [];
+    /** @var array<string, int> */
+    private array $noteCounts = [];
 
-    public function __construct(private readonly ConversionOptions $options) {}
+    private const int MAX_NOTES_PER_CODE = 8;
+
+    public function __construct(private readonly ConversionOptions $options, private readonly ?Diagnostics $diagnostics = null)
+    {
+        $this->matcher = new FontMatcher();
+        $this->chains = new \WeakMap();
+    }
 
     /** @param list<InlinePiece> $pieces
      * @return list<FlowItem>
@@ -154,14 +172,54 @@ final class InlineFormatter
         return $lines;
     }
 
+    /** The first face CSS font matching selects for a computed style. */
     public function face(ComputedStyle $style): FontFace
     {
-        return $this->options->fonts->face(match (true) {
-            $style->fontWeight >= 600 && $style->italic => FontStyle::BoldItalic,
-            $style->fontWeight >= 600 => FontStyle::Bold,
-            $style->italic => FontStyle::Italic,
-            default => FontStyle::Regular,
-        }, $style->fontFamily);
+        return $this->chain($style)->primary()->face;
+    }
+
+    private function chain(ComputedStyle $style): FaceChain
+    {
+        if (isset($this->chains[$style])) {
+            return $this->chains[$style];
+        }
+        $slant = $style->italic ? FontSlant::Italic : FontSlant::Normal;
+        $key = $style->fontFamily->css() . '|' . $slant->value . '|' . $style->fontWeight;
+        if (!isset($this->chainsByKey[$key])) {
+            $this->chainsByKey[$key] = $this->matcher->chain($this->options->fonts, $style->fontFamily, $slant, $style->fontWeight);
+            $this->explain($this->chainsByKey[$key], $style, $slant);
+        }
+
+        return $this->chains[$style] = $this->chainsByKey[$key];
+    }
+
+    /** Matching outcomes that CSS defines but that a caller may not expect are recorded, never rejected. */
+    private function explain(FaceChain $chain, ComputedStyle $style, FontSlant $slant): void
+    {
+        $face = $chain->primary();
+        if (!$chain->listedFamilyMatched && $style->fontFamily->names !== []) {
+            $this->note('font.default-family', 'No supplied family matches ' . $style->fontFamily->css() . ' in ' . $slant->value . ' style; the default family is used.');
+        }
+        if (!$chain->listedFamilyMatched && $chain->styleRelaxed) {
+            $this->note('font.style-fallback', 'The default family has no ' . $slant->value . ' face; its ' . $face->slant->value . ' face is used.');
+        }
+        if (($style->fontWeight >= 600) !== ($face->weight >= 600)) {
+            $this->note('font.weight-fallback', sprintf('Weight %d has no face on its side of the bold threshold in the matched family; its %d face is used.', $style->fontWeight, $face->weight));
+        }
+    }
+
+    private function note(string $code, string $message): void
+    {
+        if ($this->diagnostics === null || isset($this->notes[$code . ':' . $message])) {
+            return;
+        }
+        $this->notes[$code . ':' . $message] = true;
+        $count = $this->noteCounts[$code] = ($this->noteCounts[$code] ?? 0) + 1;
+        if ($count <= self::MAX_NOTES_PER_CODE) {
+            $this->diagnostics->inform($code, $message);
+        } elseif ($count === self::MAX_NOTES_PER_CODE + 1) {
+            $this->diagnostics->inform($code, 'Further ' . $code . ' notes are omitted.');
+        }
     }
 
     /** @param list<InlinePiece> $pieces

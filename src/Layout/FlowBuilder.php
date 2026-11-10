@@ -32,7 +32,7 @@ final class FlowBuilder
 
     public function __construct(private readonly ConversionOptions $options, private readonly Diagnostics $diagnostics, private readonly SemanticTree $semantics)
     {
-        $this->inline = new InlineFormatter($options);
+        $this->inline = new InlineFormatter($options, $diagnostics);
         $this->translation = new CommandTranslation();
         $this->margins = new MarginCollapser();
     }

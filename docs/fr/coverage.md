@@ -27,7 +27,7 @@ pas les exigences CSS1 absentes.
 | PDF | PDF 1.7, polices incorporées, métadonnées/langue, arbre de structure, MCR par page, annotations URI avec OBJR, artefacts. | Aucune conformité PDF/A ou PDF/UA annoncée ; pas de champs, signatures ou destinations internes dans ce module. |
 
 Les [exemples CSS1](css1.md) montrent espacements/retraits, bordures et cas historique choisi avec flottants.
-Le registre contient 52 entrées `partial` et 10 `unsupported`, aucune entièrement
+Le registre contient 53 entrées `partial` et 9 `unsupported`, aucune entièrement
 qualifiée. Les preuves de release identifient le candidat exact et les outils.
 
 Les listes de définitions conservent `dl/dt/dd` dans le modèle source et les

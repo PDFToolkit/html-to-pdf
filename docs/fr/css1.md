@@ -166,7 +166,7 @@ de chaque page et les témoins Chromium/Firefox de styles calculés et de géom�
 Elles identifient le candidat exact et les versions des outils. Un aperçu ne
 prouve ni l’équivalence navigateur/PDF ni une certification d’accessibilité.
 
-Le [registre](../../resources/css-coverage.json) compte 52 exigences partielles
-et 10 absentes. **CSS1 reste incomplet** ; les prochaines étapes sur le texte et
+Le [registre](../../resources/css-coverage.json) compte 53 exigences partielles
+et 9 absentes. **CSS1 reste incomplet** ; les prochaines étapes sur le texte et
 les polices figurent dans la [progression](css-levels.md). Aucune conformité
 PDF/A ou PDF/UA n’est annoncée.

@@ -48,11 +48,13 @@
       "status": "partial",
       "sample": "serif",
       "context": "div",
-      "note": "Ordered named/generic families resolved against explicit FontCatalog bindings; no system lookup or per-character fallback. Complete CSS1 matching remains unqualified.",
+      "note": "Ordered named/generic families resolved against explicit FontCatalog bindings. A family that is unbound or lacks the requested style is skipped, and the default family is used when none matches, with an informational diagnostic; no system lookup or per-character fallback.",
       "tests": [
         "tests/Css/Css1RegistryTest.php",
         "tests/Css/FontDeclarationsTest.php",
-        "tests/Font/FontCatalogTest.php"
+        "tests/Font/FontCatalogTest.php",
+        "tests/Font/FontMatcherTest.php",
+        "tests/Layout/FontMatchingLayoutTest.php"
       ]
     },
     {
@@ -92,10 +94,12 @@
       "status": "partial",
       "sample": "bold",
       "context": "div",
-      "note": "normal, bold and 100–900, with bolder and lighter computed by the font-independent chart of CSS 2.1 15.6 that replaces the CSS1 definition. Faces are still chosen among four supplied variants at a 600 threshold, without the complete 100–900 family repertoire.",
+      "note": "normal, bold and 100–900, with bolder and lighter computed by the font-independent chart of CSS 2.1 15.6 that replaces the CSS1 definition. A family may label a face for each of the nine weights; a missing weight selects a face by the CSS 2.1 15.6 order and never fails. No weight is synthesized; full context qualification is pending.",
       "tests": [
         "tests/Css/Css1RegistryTest.php",
-        "tests/Css/FontWeightKeywordsTest.php"
+        "tests/Css/FontWeightKeywordsTest.php",
+        "tests/Font/FontMatcherTest.php",
+        "tests/Layout/FontMatchingLayoutTest.php"
       ]
     },
     {
@@ -913,10 +917,12 @@
       "kind": "behavior",
       "name": "font-matching",
       "reference": "https://www.w3.org/TR/2008/REC-CSS1-20080411/",
-      "status": "unsupported",
-      "note": "Complete CSS1 font matching, per-character fallback and weight repertoire are absent; explicit ordered family/generic bindings are covered as a partial font-family property.",
+      "status": "partial",
+      "note": "Caller-labeled faces are matched per element in the order style, variant and weight of CSS 2.1 15.2: italic accepts oblique, other styles match exactly, a family without the style or without a binding is skipped, weights follow CSS 2.1 15.6 and never fail, and the default family supplies its best match with an informational diagnostic. Per-character fallback and the author-visible oblique and small-caps values are absent; nothing is synthesized.",
       "tests": [
-        "tests/Font/FontFaceTest.php",
+        "tests/Font/FontMatcherTest.php",
+        "tests/Font/FamilyFaceTest.php",
+        "tests/Layout/FontMatchingLayoutTest.php",
         "tests/Font/FontCatalogTest.php"
       ]
     },

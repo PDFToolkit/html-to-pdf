@@ -36,6 +36,12 @@ final readonly class FontCatalog
         throw new UnsupportedFeature('No explicitly supplied font family matches: ' . $list->css());
     }
 
+    /** The family bound to one name of a list, or null when the caller supplied none. */
+    public function find(FontFamilyName $family): ?FontSet
+    {
+        return ($family->generic ? $this->genericFamilies : $this->families)[$family->key()] ?? null;
+    }
+
     private function requireBinding(mixed $name, mixed $set): void
     {
         if (!is_string($name) || !$set instanceof FontSet) {

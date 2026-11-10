@@ -26,7 +26,7 @@ explicit extensions; they do not close missing CSS1 requirements.
 | PDF | PDF 1.7, embedded fonts, metadata/lang, structure tree, page-aware MCRs, URI link annotations with OBJRs, artifacts. | No PDF/A or PDF/UA conformance claim, form fields, digital signatures or internal destinations in this module. |
 
 The [CSS1 examples](css1.md) illustrate text spacing/indentation, borders and the selected historical float case. The registry
-contains 52 `partial` and 10 `unsupported` entries; none is fully qualified.
+contains 53 `partial` and 9 `unsupported` entries; none is fully qualified.
 Release evidence records the exact candidate and tool versions.
 
 Definition lists retain `dl/dt/dd` in the source model and project to `Sect/P/Sect`

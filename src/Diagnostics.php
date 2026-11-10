@@ -23,6 +23,20 @@ final class Diagnostics
         }
         $this->items[] = new Diagnostic($code, $message, $nodeId);
     }
+    /**
+     * Informational note about a behavior the specification defines, recorded in both
+     * policies while the budget allows. Unlike add(), it never stops a conversion.
+     */
+    public function inform(string $code, string $message, ?string $nodeId = null): bool
+    {
+        if (count($this->items) >= $this->maximum) {
+            return false;
+        }
+        $this->items[] = new Diagnostic($code, $message, $nodeId);
+
+        return true;
+    }
+
     public function unsupported(string $code, string $message, ?string $nodeId = null): void
     {
         if ($this->policy === UnsupportedPolicy::Reject) {

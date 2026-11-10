@@ -75,11 +75,14 @@ final class LayoutEngineTest extends TestCase
         self::assertEqualsWithDelta(16, $texts[1]->y - $texts[0]->y, 0.001);
     }
 
-    public function testBoldVariantUsesExplicitFaceAndMissingVariantFails(): void
+    public function testMissingBoldFaceKeepsTheFamilyAndIsReported(): void
     {
-        $s = $this->style(fontWeight: 700);
-        $this->expectException(UnsupportedFeature::class);
-        $this->layout([$this->paragraph('Bold', $s)]);
+        // CSS1 5.2.1: the weight never fails. The only face is used, without any synthesis.
+        $diagnostics = new Diagnostics();
+        $result = (new LayoutEngine())->layout($this->document([$this->paragraph('Bold', $this->style(fontWeight: 700))]), $this->options(), $diagnostics);
+        self::assertSame(self::$font, $this->texts($result)[0]->font);
+        self::assertSame(['font.weight-fallback'], array_column($diagnostics->all(), 'code'));
+        self::assertStringContainsString('Weight 700', $diagnostics->all()[0]->message);
     }
 
     public function testExplicitBoldAndItalicVariantIsRetained(): void

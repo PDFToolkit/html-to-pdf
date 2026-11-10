@@ -16,8 +16,8 @@ Version 0.4 adds signed `word-spacing`, `letter-spacing` and first-line
 `text-indent`, including inherited lengths and percentage indentation. The
 [CSS1 examples](docs/css1.md) show these text properties alongside the historical
 box/float/clear case and independent borders. Text remains selectable and link
-annotations follow its adjusted geometry. The registry records 52 partial and
-10 unsupported requirements; **complete CSS1 remains unqualified**.
+annotations follow its adjusted geometry. The registry records 53 partial and
+9 unsupported requirements; **complete CSS1 remains unqualified**.
 
 ## Install
 

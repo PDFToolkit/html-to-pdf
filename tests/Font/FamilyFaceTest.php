@@ -15,13 +15,20 @@ use PHPUnit\Framework\TestCase;
 /** The caller's font database of CSS1 5.2.1: explicit labels, no duplicate, bounded. */
 final class FamilyFaceTest extends TestCase
 {
-    private static FontFace $noto;
-    private static FontFace $lato;
+    private static ?FontFace $noto = null;
+    private static ?FontFace $lato = null;
 
     public static function setUpBeforeClass(): void
     {
         self::$noto = new FontFace(file_get_contents(__DIR__ . '/../Fixtures/fonts/NotoSans-Regular.ttf'));
         self::$lato = new FontFace(file_get_contents(__DIR__ . '/../../examples/assets/fonts/Lato-Regular.ttf'));
+    }
+
+    /** Prepared layout tables are large: release them with the class. */
+    public static function tearDownAfterClass(): void
+    {
+        self::$noto = null;
+        self::$lato = null;
     }
 
     public function testNamedSlotsAreLabeledByPosition(): void

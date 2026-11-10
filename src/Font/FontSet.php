@@ -62,6 +62,10 @@ final readonly class FontSet
         }
     }
 
+    /**
+     * Exact lookup of a named slot, failing when it is absent. Layout does not use it:
+     * text is matched with the CSS rules of FontMatcher, which never fail on a weight.
+     */
     public function face(FontStyle $style, ?FontFamilyList $families = null): FontFace
     {
         if ($families !== null && $families->names !== []) {
