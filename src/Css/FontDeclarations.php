@@ -35,7 +35,7 @@ final readonly class FontDeclarations
                 ++$normal;
             } else {
                 $property = match (true) {
-                    $part === 'italic' => 'font-style',
+                    $part === 'italic' || $part === 'oblique' => 'font-style',
                     (new FontWeights())->isValue($part) => 'font-weight',
                     default => throw new \InvalidArgumentException('Unsupported font shorthand component: ' . $part),
                 };

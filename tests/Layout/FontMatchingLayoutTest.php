@@ -17,6 +17,7 @@ use PDF\HtmlToPdf\Layout\LayoutEngine;
 use PDF\HtmlToPdf\Layout\PageSettings;
 use PDF\HtmlToPdf\Parsing\HtmlCompiler;
 use PDF\HtmlToPdf\Style\Edges;
+use PDF\HtmlToPdf\Style\FontSlant;
 use PDF\HtmlToPdf\UnsupportedPolicy;
 use PHPUnit\Framework\TestCase;
 
@@ -81,6 +82,38 @@ final class FontMatchingLayoutTest extends TestCase
         self::assertSame(self::$latoBold, $faces['strong']);
         self::assertSame(self::$latoBoldItalic, $faces['both']);
         self::assertSame([], $diagnostics);
+    }
+
+    public function testObliqueRequiresAFaceLabeledObliqueAndItalicAcceptsIt(): void
+    {
+        $oblique = new FamilyFace(self::$latoBoldItalic, 400, FontSlant::Oblique);
+        $both = new FontSet(self::$lato, italic: self::$latoItalic, faces: [$oblique]);
+        [$faces, $diagnostics] = $this->faces('<p><span style="font-style:oblique">slanted</span> <em>italic</em> upright</p>', $both);
+        self::assertSame(self::$latoBoldItalic, $faces['slanted']);
+        self::assertSame(self::$latoItalic, $faces['italic']);
+        self::assertSame(self::$lato, $faces['upright']);
+        self::assertSame([], $diagnostics);
+
+        // Without an italic face, italic is satisfied by the oblique one (CSS1 5.2.3).
+        [$faces, $diagnostics] = $this->faces('<p><em>italic</em></p>', new FontSet(self::$lato, faces: [$oblique]));
+        self::assertSame(self::$latoBoldItalic, $faces['italic']);
+        self::assertSame([], $diagnostics);
+    }
+
+    public function testObliqueIsNotSatisfiedByAnItalicFaceOfAListedFamily(): void
+    {
+        $oblique = new FamilyFace(self::$latoBoldItalic, 400, FontSlant::Oblique);
+        $fonts = new FontSet(self::$noto, catalog: new FontCatalog(['ItalicOnly' => new FontSet(self::$lato, italic: self::$latoItalic), 'WithOblique' => new FontSet(self::$latoBold, faces: [$oblique])]));
+        [$faces, $diagnostics] = $this->faces('<p style="font-family:ItalicOnly, WithOblique;font-style:oblique">slanted</p>', $fonts);
+        self::assertSame(self::$latoBoldItalic, $faces['slanted'], 'the italic-only family fails on the style and the next family is tried');
+        self::assertSame([], $diagnostics);
+
+        // No family has an oblique face: the default family offers its closest face and says so.
+        $default = new FontSet(self::$noto, italic: self::$latoItalic, catalog: new FontCatalog(['ItalicOnly' => new FontSet(self::$lato, italic: self::$latoBold)]));
+        [$faces, $diagnostics] = $this->faces('<p style="font-family:ItalicOnly;font-style:oblique">slanted</p>', $default);
+        self::assertSame(self::$latoItalic, $faces['slanted']);
+        self::assertSame(['font.default-family', 'font.style-fallback'], array_map(static fn(Diagnostic $item): string => $item->code, $diagnostics));
+        self::assertStringContainsString('no oblique face; its italic face', $diagnostics[1]->message);
     }
 
     public function testAFamilyWithoutTheStyleIsSkippedForTheNextFamily(): void

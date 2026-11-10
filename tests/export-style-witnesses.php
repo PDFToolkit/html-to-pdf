@@ -136,7 +136,7 @@ HTML;
             $style = $node->style;
             $values = [
                 'font-size' => $style->fontSize, 'line-height' => $style->lineHeight,
-                'font-weight' => (string) $style->fontWeight, 'font-style' => $style->italic ? 'italic' : 'normal',
+                'font-weight' => (string) $style->fontWeight, 'font-style' => $style->fontSlant()->value,
                 'color' => $this->color($style->color),
             ];
             if (in_array($id, ['em', 'rem', 'units', 'box', 'longhand', 'percent'], true)) {

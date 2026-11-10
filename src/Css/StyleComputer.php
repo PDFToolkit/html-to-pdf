@@ -11,6 +11,7 @@ use PDF\HtmlToPdf\Style\ComputedStyle;
 use PDF\HtmlToPdf\Style\Edges;
 use PDF\HtmlToPdf\Style\Length;
 use PDF\HtmlToPdf\Style\FontFamilyList;
+use PDF\HtmlToPdf\Style\FontSlant;
 use PDF\HtmlToPdf\Style\TextIndent;
 use PDF\HtmlToPdf\Style\TextSpacing;
 
@@ -83,7 +84,8 @@ final readonly class StyleComputer
         $this->value('font-variant', fn(): string => $this->values->keyword($css['font-variant'], ['normal']), 'normal');
         // A child inherits the resulting weight, never the relative keyword.
         $fontWeight = $this->inheritedTextValue('font-weight', $declared, fn(string $value): int => (new FontWeights())->resolve($value, $parent->style->fontWeight), $parent->style->fontWeight, (new ComputedStyle())->fontWeight);
-        $italic = $this->value('font-style', fn(): bool => $this->values->keyword($css['font-style'], ['normal', 'italic']) === 'italic', $parent->style->italic);
+        $slant = $this->inheritedTextValue('font-style', $declared, fn(string $value): FontSlant => FontSlant::from($this->values->keyword($value, ['normal', 'italic', 'oblique'])), $parent->style->fontSlant(), FontSlant::Normal);
+        $italic = $slant === FontSlant::Italic;
         $align = $this->value('text-align', fn(): string => $this->values->keyword($css['text-align'], ['left', 'center', 'right']), $parent->style->textAlign);
         $textValues = new TextValues();
         $textSpacing = new TextSpacing(
@@ -114,7 +116,7 @@ final readonly class StyleComputer
             $vertical = 'top';
         }
         $tableLayout = $this->value('table-layout', fn(): string => $this->values->keyword($css['table-layout'], ['auto', 'fixed']), 'auto');
-        return new StyleState(new ComputedStyle($display, $fontSize, $lineHeight, $fontWeight, $italic, $color, $background, $align, $whiteSpace, $underline, $margin, $padding, $borderWidth, $borderColor, $width, $height, $before, $after, $avoid, $orphans, $widows, $listStyle, $vertical, $tableLayout, $borders, $float, $clear, $fontFamily, $textSpacing, $textIndent), $lineFactor);
+        return new StyleState(new ComputedStyle($display, $fontSize, $lineHeight, $fontWeight, $italic, $color, $background, $align, $whiteSpace, $underline, $margin, $padding, $borderWidth, $borderColor, $width, $height, $before, $after, $avoid, $orphans, $widows, $listStyle, $vertical, $tableLayout, $borders, $float, $clear, $fontFamily, $textSpacing, $textIndent, $slant), $lineFactor);
     }
 
     /** Preserve the uniform border input accepted by the 0.1 computed-style API.
@@ -276,7 +278,7 @@ final readonly class StyleComputer
         $color = (new ColorFormatter())->format(...);
         $textValues = new TextValues();
         $dimension = static fn(?Length $length): string => $length === null ? 'auto' : $length->value . ($length->percentage ? '%' : 'pt');
-        $values = ['font-family' => $s->fontFamily->css(), 'font-variant' => 'normal', 'float' => $s->float, 'clear' => $s->clear, 'display' => $s->display, 'font-size' => $s->fontSize . 'pt', 'line-height' => $s->lineHeight . 'pt', 'font-weight' => (string) $s->fontWeight, 'font-style' => $s->italic ? 'italic' : 'normal', 'color' => $color($s->color), 'background-color' => $s->background === null ? 'transparent' : $color($s->background), 'text-align' => $s->textAlign, 'letter-spacing' => $textValues->serializeSpacing($s->textSpacing->letterSpacing), 'word-spacing' => $textValues->serializeSpacing($s->textSpacing->wordSpacing), 'text-indent' => $textValues->serializeIndent($s->textIndent), 'white-space' => $s->whiteSpace, 'text-decoration' => $s->underline ? 'underline' : 'none', 'width' => $dimension($s->width), 'height' => $dimension($s->height), 'break-before' => $s->breakBefore, 'break-after' => $s->breakAfter, 'break-inside' => $s->breakInsideAvoid ? 'avoid' : 'auto', 'orphans' => (string) $s->orphans, 'widows' => (string) $s->widows, 'list-style-type' => $s->listStyleType, 'vertical-align' => $s->verticalAlign, 'table-layout' => $s->tableLayout];
+        $values = ['font-family' => $s->fontFamily->css(), 'font-variant' => 'normal', 'float' => $s->float, 'clear' => $s->clear, 'display' => $s->display, 'font-size' => $s->fontSize . 'pt', 'line-height' => $s->lineHeight . 'pt', 'font-weight' => (string) $s->fontWeight, 'font-style' => $s->fontSlant()->value, 'color' => $color($s->color), 'background-color' => $s->background === null ? 'transparent' : $color($s->background), 'text-align' => $s->textAlign, 'letter-spacing' => $textValues->serializeSpacing($s->textSpacing->letterSpacing), 'word-spacing' => $textValues->serializeSpacing($s->textSpacing->wordSpacing), 'text-indent' => $textValues->serializeIndent($s->textIndent), 'white-space' => $s->whiteSpace, 'text-decoration' => $s->underline ? 'underline' : 'none', 'width' => $dimension($s->width), 'height' => $dimension($s->height), 'break-before' => $s->breakBefore, 'break-after' => $s->breakAfter, 'break-inside' => $s->breakInsideAvoid ? 'avoid' : 'auto', 'orphans' => (string) $s->orphans, 'widows' => (string) $s->widows, 'list-style-type' => $s->listStyleType, 'vertical-align' => $s->verticalAlign, 'table-layout' => $s->tableLayout];
         foreach (['margin', 'padding'] as $name) {
             foreach (['top', 'right', 'bottom', 'left'] as $side) {
                 $values[$name . '-' . $side] = $s->$name->$side . 'pt';

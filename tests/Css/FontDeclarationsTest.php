@@ -88,7 +88,7 @@ final class FontDeclarationsTest extends CompilerTestCase
     /** @return iterable<string,array{string}> */
     public static function invalidShorthands(): iterable
     {
-        foreach (['10px', 'italic bold bold 10px serif', 'normal normal normal normal 10px serif', '10px / serif', '10px//1 serif', '10px/0 serif', '10px/1 serif,', 'italic 0px serif', 'small-caps 10px serif', 'oblique 10px serif', 'caption', '10px serif,,sans-serif', '10px "unterminated'] as $value) {
+        foreach (['10px', 'italic bold bold 10px serif', 'normal normal normal normal 10px serif', '10px / serif', '10px//1 serif', '10px/0 serif', '10px/1 serif,', 'italic 0px serif', 'small-caps 10px serif', 'italic oblique 10px serif', 'oblique oblique 10px serif', 'caption', '10px serif,,sans-serif', '10px "unterminated'] as $value) {
             yield $value => [$value];
         }
     }

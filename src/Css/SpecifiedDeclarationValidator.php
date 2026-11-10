@@ -88,7 +88,7 @@ final readonly class SpecifiedDeclarationValidator
             'float' => ['none', 'left', 'right'],
             'clear' => ['none', 'left', 'right', 'both'],
             'display' => ['none', 'block', 'inline', 'list-item', 'table', 'table-row-group', 'table-header-group', 'table-footer-group', 'table-row', 'table-cell', 'table-caption'],
-            'font-style' => ['normal', 'italic'],
+            'font-style' => ['normal', 'italic', 'oblique'],
             'text-align' => ['left', 'center', 'right'],
             'white-space' => ['normal', 'nowrap', 'pre', 'pre-wrap'],
             'text-decoration' => ['none', 'underline'],

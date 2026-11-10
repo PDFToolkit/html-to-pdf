@@ -183,7 +183,7 @@ final class InlineFormatter
         if (isset($this->chains[$style])) {
             return $this->chains[$style];
         }
-        $slant = $style->italic ? FontSlant::Italic : FontSlant::Normal;
+        $slant = $style->fontSlant();
         $key = $style->fontFamily->css() . '|' . $slant->value . '|' . $style->fontWeight;
         if (!isset($this->chainsByKey[$key])) {
             $this->chainsByKey[$key] = $this->matcher->chain($this->options->fonts, $style->fontFamily, $slant, $style->fontWeight);
